@@ -38,6 +38,7 @@ import splice.common.utils
 _LOG = logging.getLogger(__name__)
 CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
 
+SAT_OWNER_PREFIX = 'satellite-'
 
 def get_product_ids(subscribedchannels, clone_map):
     """
@@ -222,103 +223,129 @@ def upload_to_rcs(rules_data, pool_data, product_data, mpu_data, sample_json=Non
             utils.systemExit(os.EX_DATAERR, "Error uploading marketing product usage data")
 
         # Upload Rules
-        url = "/v1/rules/"
-        status, body = splice_conn.POST(url, rules_data)
-        _LOG.info("POST to %s: received %s %s" % (url, status, body))
-        if status != 202 and status != 204:
-            _LOG.error("Rules data was not uploaded correctly")
-            utils.systemExit(os.EX_DATAERR, "Error uploading rules data")
-        
-        # Upload Pools
-        url = "/v1/pool/"
-        status, body = splice_conn.POST(url, pool_data)
-        _LOG.info("POST to %s: received %s %s" % (url, status, body))
-        if status != 202 and status != 204:
-            _LOG.error("Pool data was not uploaded correctly")
-            utils.systemExit(os.EX_DATAERR, "Error uploading pool data")
-        
-        # Upload Products
-        url = "/v1/product/"
-        status, body = splice_conn.POST(url, product_data)
-        _LOG.info("POST to %s: received %s %s" % (url, status, body))
-        if status != 202 and status != 204:
-            _LOG.error("Products data was not uploaded correctly")
-            utils.systemExit(os.EX_DATAERR, "Error uploading products data")
+        #url = "/v1/rules/"
+        #status, body = splice_conn.POST(url, rules_data)
+        #_LOG.info("POST to %s: received %s %s" % (url, status, body))
+        #if status != 202 and status != 204:
+        #    _LOG.error("Rules data was not uploaded correctly")
+        #    utils.systemExit(os.EX_DATAERR, "Error uploading rules data")
+        #
+        ## Upload Pools
+        #url = "/v1/pool/"
+        #status, body = splice_conn.POST(url, pool_data)
+        #_LOG.info("POST to %s: received %s %s" % (url, status, body))
+        #if status != 202 and status != 204:
+        #    _LOG.error("Pool data was not uploaded correctly")
+        #    utils.systemExit(os.EX_DATAERR, "Error uploading pool data")
+        #
+        ## Upload Products
+        #url = "/v1/product/"
+        #status, body = splice_conn.POST(url, product_data)
+        #_LOG.info("POST to %s: received %s %s" % (url, status, body))
+        #if status != 202 and status != 204:
+        #    _LOG.error("Products data was not uploaded correctly")
+        #    utils.systemExit(os.EX_DATAERR, "Error uploading products data")
 
         utils.systemExit(os.EX_OK, "Upload was successful")
     except Exception, e:
         _LOG.error("Error uploading MarketingProductUsage Data; Error: %s" % e)
         utils.systemExit(os.EX_DATAERR, "Error uploading; Error: %s" % e)
 
-def update_owners(sw_client, cpin_client, orgs):
+def update_owners(cpin_client, orgs):
     """
     ensure that the candlepin owner set matches what's in spacewalk
     """
 
     owners = cpin_client.getOwners()
     org_ids = orgs.keys()
-    owner_keys = map(lambda x: x['key'], owners)
-    
-
-    # perform deletions
-    for owner in owners:
-        if owner['key'] == 'admin':
-            continue
-        if str(owner['key']) not in  org_ids:
-            _LOG.info("removing owner %s, owner is no longer in spacewalk" % owner['key'])
-            cpin_client.deleteOwner(owner['key']) 
-
-    # pull the new owner list, perform creations
-    owners = cpin_client.getOwners()
+    owner_labels = map(lambda x: x['label'], owners)
 
     for org_id in org_ids:
-        if org_id not in owner_keys:
-            _LOG.info("creating owner %s, owner is in spacewalk but not candlepin" % org_id)
-            cpin_client.createOwner(org_id, orgs[org_id])
+        katello_label = SAT_OWNER_PREFIX + org_id
+        if katello_label not in owner_labels:
+            _LOG.info("creating owner %s (%s), owner is in spacewalk but not katello" % (katello_label, orgs[org_id]))
+            cpin_client.createOwner(label=katello_label, name=orgs[org_id])
+
+    # get the owner list again
+    owners = cpin_client.getOwners()
+    # build up a label->name mapping this time
+    owner_labels_names = {}
+    for owner in owners:
+        owner_labels_names[owner['label']] = owner['name']
+
+    # perform deletions
+    for owner_label in owner_labels_names.keys():
+        # bail out if this isn't an owner we are managing
+        if not owner_label.startswith(SAT_OWNER_PREFIX):
+            continue
+        
+        # get the org ID from the katello name
+        kt_org_id = owner_label[len(SAT_OWNER_PREFIX):]
+        if kt_org_id not in org_ids:
+            _LOG.info("removing owner %s (name: %s), owner is no longer in spacewalk" % (owner_label, owner_labels_names[owner_label]))
+            cpin_client.deleteOwner(name=owner_labels_names[owner_label])
             
 
-def delete_stale_consumers(sw_client, cpin_client, consumer_list, system_list):
+
+def delete_stale_consumers(cpin_client, consumer_list, system_list):
     """
     removes consumers that are in candlepin and not spacewalk. This is to clean
     up any systems that were deleted in spacewalk.
     """
 
-    system_id_set = set()
-    for system in system_list:
-        system_id_set.add(system['server_id'])
-   
-    consumer_id_set = set()
+    system_id_list = map(lambda x: x['server_id'], system_list)
+
+    owner_labels = {}
+    owner_list = cpin_client.getOwners()
+    for owner in owner_list:
+        owner_labels[owner['id']] = owner['label']
+    
+  
+    consumers_to_delete = [] 
     for consumer in consumer_list:
-        consumer_id_set.add(consumer['uuid'])
+        # don't delete consumers that are not in orgs we manage!
+        if not owner_labels[consumer['environment']['organization_id']].startswith(SAT_OWNER_PREFIX):
+            continue
+        if consumer['name'] not in system_id_list:
+            consumers_to_delete.append(consumer)
 
     
-    consumers_to_remove = list(consumer_id_set - system_id_set)
-    _LOG.info("removing %s consumers that are no longer in spacewalk" % len(consumers_to_remove))
-    cpin_client.unregisterConsumers(consumers_to_remove)
-        
+    _LOG.info("removing %s consumers that are no longer in spacewalk" % len(consumers_to_delete))
+    for consumer in consumers_to_delete:
+        cpin_client.deleteConsumer(consumer['uuid'])
 
 def upload_to_candlepin(consumers, sw_client, cpin_client):
     """
     Uploads consumer data to candlepin
     """
 
+    # XXX: confusing
+    consumers_from_kt = cpin_client.getConsumers()
+    sysids_to_uuids = {}
+    for consumer in consumers_from_kt:
+        sysids_to_uuids[consumer['name']] = consumer['uuid']
+    sw_sysids_from_kt = map(lambda x: x['name'], consumers_from_kt)
+    print sysids_to_uuids
+
     for consumer in consumers:
-        try:
-            # the first call will fail if the consumer doesn't exist, and send us to the except block
-            cpin_client.getConsumer(consumer['id'])
-            cpin_client.updateConsumer(uuid=consumer['id'],
+        if consumer['id'] in sw_sysids_from_kt:
+            print "UPDATING: %s" % consumer
+            # TODO: fix confusing first arg
+            cpin_client.updateConsumer(cp_uuid=sysids_to_uuids[consumer['id']],
+                                          sw_id = consumer['id'],
                                           facts=consumer['facts'],
                                           installed_products=consumer['installed_products'],
                                           owner=consumer['owner'],
                                           last_checkin=consumer['last_checkin'])
-        except NotFoundException:
-            # if we don't have a candlepin ID for this system, treat as a new system
-            uuid = cpin_client.createConsumer(name=consumer['name'],
+        else:
+
+            # TODO: FIX UUID TO NAME SHENANIGANS IN CPIN_CONNECT
+            uuid = cpin_client.createConsumer(name='unused-field',
+                                                uuid=consumer['id'],
                                                 facts=consumer['facts'],
                                                 installed_products=consumer['installed_products'],
                                                 last_checkin=consumer['last_checkin'],
-                                                owner=consumer['owner'],
-                                                uuid=consumer['id'])
+                                                owner=consumer['owner'])
 
 def get_checkin_config():
     return {
@@ -353,10 +380,12 @@ def spacewalk_sync(options):
     system_details = client.get_system_list()
     org_list = client.get_org_list()
 
-    update_owners(client, cpin_client, org_list)
+    update_owners(cpin_client, org_list)
 
     cpin_consumer_list = cpin_client.getConsumers()
-    delete_stale_consumers(client, cpin_client, cpin_consumer_list, system_details)
+
+
+    delete_stale_consumers(cpin_client, cpin_consumer_list, system_details)
 
 
     # build the clone mapping
@@ -401,16 +430,13 @@ def splice_sync(options):
                                         rmu['instance_identifier']))}), 
                                         rcs_mkt_usage)
     
-    rules_data = cpin_client.getRules()
-    pool_data = cpin_client.getPools()
-    product_data = cpin_client.getProducts()
+    #rules_data = cpin_client.getRules()
+    #pool_data = cpin_client.getPools()
+    #product_data = cpin_client.getProducts()
 
     _LOG.info("uploading to RCS")
-    upload_to_rcs(rules_data=build_rcs_data([rules_data]), 
-        pool_data=build_rcs_data(pool_data), 
-        product_data=build_rcs_data(product_data), 
-        mpu_data=build_rcs_data(rcs_mkt_usage), 
-                                sample_json=options.sample_json)
+    upload_to_rcs(mpu_data=build_rcs_data(rcs_mkt_usage), 
+                  sample_json=sample_json)
     _LOG.info("upload completed")
 
 
