@@ -497,15 +497,22 @@ def spacewalk_sync(options):
     sw_user_list = client.get_user_list()
     system_details = client.get_system_list()
     channel_details = client.get_channel_list()
-    update_system_channel(system_details, channel_details)
     org_list = client.get_org_list()
+    _LOG.info("retrieve done")
+    _LOG.info("compute base channel")
+    update_system_channel(system_details, channel_details)
+    _LOG.info("compute base channel done")
 
+    _LOG.info("user data import")
     update_owners(katello_client, org_list)
     update_users(katello_client, sw_user_list)
     update_roles(katello_client, sw_user_list)
+    _LOG.info("user data import done")
 
     katello_consumer_list = katello_client.getConsumers()
+    _LOG.info("delete stale consumers")
     delete_stale_consumers(katello_client, katello_consumer_list, system_details)
+    _LOG.info("delete stale consumers done")
 
     _LOG.info("adding installed products to %s spacewalk records" % len(system_details))
     # enrich with engineering product IDs
@@ -513,6 +520,7 @@ def spacewalk_sync(options):
     map(lambda details :
             details.update({'installed_products' : get_product_ids(details['software_channel'],
                             clone_mapping)}), system_details)
+    _LOG.info("installed products done")
 
     # convert the system details to katello consumers
     consumers.extend(transform_to_consumers(system_details))
