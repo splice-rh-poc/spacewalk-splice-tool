@@ -588,6 +588,8 @@ def main(options):
     finish_time = time.time() - start_time
     _LOG.info("run complete") 
 
+    pid = os.getpid()
+    os.system('/usr/bin/cat /proc/%s/status > /root/%s.status' % (pid, pid))
 
 if __name__ == "__main__":
     parser = OptionParser(description="Spacewalk Splice Tool")
