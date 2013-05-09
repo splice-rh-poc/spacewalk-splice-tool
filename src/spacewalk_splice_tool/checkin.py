@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import logging
+import pycallgraph
 
 from spacewalk_splice_tool import facts, connect, utils, constants
 from spacewalk_splice_tool.sw_client import SpacewalkClient
@@ -573,6 +574,7 @@ def splice_sync(options):
 
 def main(options):
 
+    pycallgraph.start_trace()
     global CONFIG
     CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
 
@@ -592,6 +594,7 @@ def main(options):
 
     pid = os.getpid()
     os.system('/bin/cat /proc/%s/status > /root/%s.status' % (pid, pid))
+    pycallgraph.make_dot_graph('%s.png' % pid)
 
 if __name__ == "__main__":
     parser = OptionParser(description="Spacewalk Splice Tool")
