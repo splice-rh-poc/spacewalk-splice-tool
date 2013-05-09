@@ -509,7 +509,9 @@ def spacewalk_sync(options):
     update_roles(katello_client, sw_user_list)
     _LOG.info("user data import done")
 
+    _LOG.info("katello get consumers")
     katello_consumer_list = katello_client.getConsumers()
+    _LOG.info("katello get consumers done")
     _LOG.info("delete stale consumers")
     delete_stale_consumers(katello_client, katello_consumer_list, system_details)
     _LOG.info("delete stale consumers done")
