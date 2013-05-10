@@ -79,6 +79,12 @@ class KatelloConnection():
     def getRedhatProvider(self, org):
         return self.provapi.provider_by_name(orgName=org, provName="Red Hat")
 
+    def getEntitlements(self, system_id):
+        return self.systemapi.subscriptions(system_id=system_id)['entitlements']
+
+    def getSubscriptionStatus(self, system_uuid):
+        return self.systemapi.subscription_status(uuid=system_uuid)
+
     def createOwner(self, label, name):
         org = self.orgapi.create(name, label, "no description")
         library = self.envapi.library_by_org(org['label'])
@@ -119,8 +125,6 @@ class KatelloConnection():
 
         self.infoapi.add_custom_info(informable_type='system', informable_id=returned['id'],
                                         keyname='spacewalk-id', value=sw_uuid) 
-        self.infoapi.add_custom_info(informable_type='system', informable_id=returned['id'],
-                                        keyname='spacewalk-server-hostname', value=spacewalk_server_hostname) 
 
         return consumer['uuid']
         
@@ -128,8 +132,6 @@ class KatelloConnection():
     
     def updateConsumer(self, name, cp_uuid, facts, installed_products, last_checkin, sw_id, owner=None, guest_uuids=None,
                         release=None, service_level=None):
-        # XXX: need to support altering owner of existing consumer
-
         params = {}
         params['name'] = name
         if installed_products is not None:
@@ -149,6 +151,8 @@ class KatelloConnection():
         self.systemapi.refresh_subscriptions(cp_uuid)
 
     def getConsumers(self, owner=None):
+        # TODO: this has a lot of logic and could be refactored
+        
         # the API wants "orgId" but they mean "label"
         org_ids = map(lambda x: x['label'], self.orgapi.organizations())
         consumer_list = []
@@ -156,7 +160,19 @@ class KatelloConnection():
             consumer_list.append(self.systemapi.systems_by_org(orgId=org_id))
         
         # flatten the list
-        return list(itertools.chain.from_iterable(consumer_list))
+        consumer_list = list(itertools.chain.from_iterable(consumer_list))
+        full_consumers_list = []
+        # unfortunately, we need to call again to get the "full" consumer with facts
+        for consumer in consumer_list:
+            full_consumer = self._getConsumer(consumer['uuid'])
+            full_consumer['entitlement_status'] = self.getSubscriptionStatus(consumer['uuid'])
+            full_consumers_list.append(full_consumer)
+
+        return full_consumers_list
+    
+
+    def _getConsumer(self, consumer_uuid):
+        return self.systemapi.system(system_id=consumer_uuid)
 
     def deleteConsumer(self, consumer_uuid):
         self.systemapi.unregister(consumer_uuid)
@@ -194,84 +210,6 @@ class KatelloConnection():
     def _convert_date(self, dt):
         retval = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return retval
-
-    def getRules(self):
-        url = "/rules"
-        encoded_rules = self._request(url, 'GET', decode_json=False)
-        decoded_rules = base64.b64decode(encoded_rules)
-        return Rules(version="0", data=decoded_rules)
-
-
-    def getProducts(self):
-        url = "/products"
-        data = self._request(url, 'GET')
-        return self.translateProducts(data)
-
-    def getPools(self):
-        url = "/pools"
-        data = self._request(url, 'GET')
-        return self.translatePools(data)
-
-    def translateProducts(self, data):
-        products = []
-        for item in data:
-            product = Product()
-            product.updated = convert_to_datetime(item["updated"])
-            if item.has_key("created"):
-                product.created = convert_to_datetime(item["created"])
-            else:
-                # Candlepin has some 'products' which have an 'updated', but no 'created'
-                _LOG.info("Product '%s' does not have a 'created' value, defaulting to value for updated" % (item["id"]))
-                product.created = product.updated
- 
-            product.product_id = item["id"]
-            product.name = item["name"]
-            for attribute in item["attributes"]:
-                # Expecting values for "type", "arch", "name"
-                product.attrs[attribute["name"]] = attribute["value"]
-            eng_prods = []
-            eng_ids = []
-            for prod_cnt in item["productContent"]:
-                ep = dict()
-                ep["id"] = prod_cnt["content"]["id"]
-                ep["label"] = prod_cnt["content"]["label"]
-                ep["name"] = prod_cnt["content"]["name"]
-                ep["vendor"] = prod_cnt["content"]["vendor"]
-                eng_prods.append(ep)
-                eng_ids.append(ep["id"])
-            product.eng_prods = eng_prods
-            product.engineering_ids = eng_ids
-            product.dependent_product_ids = item["dependentProductIds"]
-            products.append(product)
-        return products
-
-
-    def translatePools(self, data):
-        pools = []
-        for item in data:
-            p = Pool()
-            p.uuid = item["id"]
-            p.account = item["accountNumber"]
-            p.created = convert_to_datetime(item["created"])
-            p.quantity = item["quantity"]
-            p.end_date = convert_to_datetime(item["endDate"])
-            p.start_date = convert_to_datetime(item["startDate"])
-            p.updated = convert_to_datetime(item["updated"])
-            for prod_attr in item["productAttributes"]:
-                name = prod_attr["name"]
-                value = prod_attr["value"]
-                p.product_attributes[name] = value
-            p.product_id = item["productId"]
-            p.product_name = item["productName"]
-            provided_products = []
-            for prov_prod in item["providedProducts"]:
-                entry = dict()
-                entry["id"] = prov_prod["productId"]
-                entry["name"] = prov_prod["productName"]
-                provided_products.append(entry)
-            p.provided_products = provided_products
-            pools.append(p)
-        return pools
 
 if __name__ == '__main__':
     kc = KatelloConnection()
