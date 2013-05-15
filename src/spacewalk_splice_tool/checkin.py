@@ -46,7 +46,9 @@ CONFIG = None
 
 SAT_OWNER_PREFIX = 'satellite-'
 
-def get_product_ids(subscribedchannels, clone_map):
+CERT_DIR = CertificateDirectory("/usr/share/rhsm/product/RHEL-6/")
+
+def get_product_ids(subscribedchannels):
     """
     For the subscribed base and child channels look up product ids
     """
@@ -58,18 +60,14 @@ def get_product_ids(subscribedchannels, clone_map):
 
     product_ids = []
     for channel in subscribedchannels.split(';'):
-        # grab the origin
-        #origin_channel = clone_map[channel['channel_label']]
         origin_channel = channel
         if origin_channel in channel_mappings:
             cert = channel_mappings[origin_channel]
             product_ids.append(cert.split('-')[-1].split('.')[0])
     # reformat to how candlepin expects the product id list
-    # TODO: extremely inefficient to load this per-call!
-    cert_dir = CertificateDirectory("/usr/share/rhsm/product/RHEL-6/")
     installed_products = []
     for p in product_ids:
-        product_cert = cert_dir.findByProduct(str(p))
+        product_cert = CERT_DIR.findByProduct(str(p))
         installed_products.append({"productId": product_cert.products[0].id, "productName": product_cert.products[0].name})
     return installed_products
 
@@ -117,6 +115,7 @@ def transform_to_rcs(consumer):
     """
 
     retval = {}
+
     retval['splice_server'] = _get_splice_server_uuid()
     retval['date'] = consumer['checkin_time']
     retval['name'] = consumer['name']
@@ -127,8 +126,8 @@ def transform_to_rcs(consumer):
     retval['hostname'] = consumer['facts']['network.hostname']
     retval['instance_identifier'] = consumer['uuid']
     retval['entitlement_status'] = consumer['entitlement_status']
-    retval['organization_id'] = str(consumer['environment']['organization_id'])
-    retval['organization_name'] = consumer['environment']['organization']
+    retval['organization_id'] = str(consumer['owner']['key'])
+    retval['organization_name'] = consumer['owner']['displayName']
     retval['facts'] = transform_facts_to_rcs(consumer['facts'])
     return retval
 
@@ -358,16 +357,10 @@ def delete_stale_consumers(katello_client, consumer_list, system_list):
 
     system_id_list = map(lambda x: x['name'], system_list)
 
-    owner_labels = {}
-    owner_list = katello_client.getOwners()
-    for owner in owner_list:
-        owner_labels[owner['id']] = owner['label']
-    
-  
     consumers_to_delete = [] 
     for consumer in consumer_list:
         # don't delete consumers that are not in orgs we manage!
-        if not owner_labels[consumer['environment']['organization_id']].startswith(SAT_OWNER_PREFIX):
+        if not consumer['owner']['key'].startswith(SAT_OWNER_PREFIX):
             continue
         if consumer['name'] not in system_id_list:
             consumers_to_delete.append(consumer)
@@ -378,23 +371,31 @@ def delete_stale_consumers(katello_client, consumer_list, system_list):
         _LOG.info("removed consumer %s" % consumer['name'])
         katello_client.deleteConsumer(consumer['uuid'])
 
-def upload_to_katello(consumers, sw_client, katello_client):
+def upload_host_guest_mapping(host_guests, katello_client):
+    """
+    updates katello consumers that have guests. This has to happen after an
+    initial update, so we have UUIDs for all systems
+    """
+    pass
+
+def upload_to_katello(consumers, katello_client):
     """
     Uploads consumer data to katello
     """
 
-    consumers_from_kt = katello_client.getConsumers()
-    sysids_to_uuids = {}
+    # TODO: this can go away and be refactored to use findBySpacewalkID within
+    # the loop
+    consumers_from_kt = katello_client.getConsumers(with_details=False)
+    names_to_uuids = {}
     for consumer in consumers_from_kt:
-        sysids_to_uuids[consumer['name']] = consumer['uuid']
-    sw_sysids_from_kt = map(lambda x: x['name'], consumers_from_kt)
+        names_to_uuids[consumer['name']] = consumer['uuid']
 
     done = 0
     for consumer in consumers:
         if (done % 10) == 0:
             _LOG.info("%s consumers uploaded so far." % done)
         if katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id']):
-            katello_client.updateConsumer(cp_uuid=sysids_to_uuids[consumer['name']],
+            katello_client.updateConsumer(cp_uuid=names_to_uuids[consumer['name']],
                                           sw_id = consumer['id'],
                                           name = consumer['name'],
                                           facts=consumer['facts'],
@@ -473,6 +474,8 @@ def spacewalk_sync(options):
     sw_user_list = client.get_user_list()
     system_details = client.get_system_list()
     channel_details = client.get_channel_list()
+    hosts_guests = client.get_host_guest_list()
+    update_system_channel(system_details, channel_details)
     org_list = client.get_org_list()
     _LOG.info("retrieve done")
     _LOG.info("compute base channel")
@@ -496,16 +499,20 @@ def spacewalk_sync(options):
     # enrich with engineering product IDs
     clone_mapping = []
     map(lambda details :
-            details.update({'installed_products' : get_product_ids(details['software_channel'],
-                            clone_mapping)}), system_details)
+            details.update({'installed_products' : \
+                            get_product_ids(details['software_channel'])}),
+                           system_details)
     _LOG.info("installed products done")
 
     # convert the system details to katello consumers
     consumers.extend(transform_to_consumers(system_details))
     _LOG.info("found %s systems to upload into katello" % len(consumers))
     _LOG.info("uploading to katello...")
-    upload_to_katello(consumers, client, katello_client)
-    _LOG.info("upload completed")
+    upload_to_katello(consumers, katello_client)
+    _LOG.info("upload completed")#. updating with guest info..")
+#    consumer_list = katello_client.getConsumers(with_details=False)
+#    upload_host_guest_mapping(consumer_list, katello_client)
+#    _LOG.info("guest upload completed")
 
 
 def splice_sync(options):

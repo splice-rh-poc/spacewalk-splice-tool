@@ -97,6 +97,10 @@ class CheckinTest(SpliceToolTest):
         self.assertTrue(upload_to_cp.called)
         self.assertEquals(2, len(upload_to_cp.call_args[0][0]))
 
+    def test_host_guest_sync(self):
+        mocked_cp_client = Mock()
+        checkin.upload_host_guest_mapping(consumer_list, mocked_cp_client)
+
 
 user_list = [{'username': 'admin', 
               'first_name': 'James', 
@@ -128,6 +132,7 @@ system_list = [{'memory': '7466',
                 'entitlements': 'Spacewalk Management Entitled Servers', 
                 'organization': 'Red Hat (Internal Use Only)', 
                 'ip_address': '10.96.161.145', 
+                'virtual_host': '1000010002', 
                 'sockets': '1'}, 
                {'memory': '7466', 
                 'server_id': '1000010002', 
