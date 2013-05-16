@@ -61,8 +61,10 @@ class ConsumerThread(threading.Thread):
     def run(self):
         while True:
             try:
+                size = self.queue.qsize()
+                if (size % 10) == 0 and size != 0:
+                    _LOG.info("%s consumers left to process" % size)
                 consumer = self.queue.get()
-                print "queue size: %s" % self.queue.qsize()
             except Queue.Empty:
                 return
             self.upload_to_katello(consumer)
@@ -526,6 +528,7 @@ def spacewalk_sync(options):
     [consumer_queue.put(c) for c in consumers]
 
     start = time.time()
+    _LOG.info("%s consumers left to process" % len(consumers))
     for i in range(CONFIG.getint('main', 'threads')):
         c_thread = ConsumerThread(katello_client, names_to_uuids, consumer_queue)
         c_thread.daemon = True
