@@ -489,7 +489,6 @@ def spacewalk_sync(options):
     client = SpacewalkClient(CONFIG.get('spacewalk', 'host'),
                              CONFIG.get('spacewalk', 'ssh_key_path'))
     katello_client = KatelloConnection()
-    consumers = []
 
     _LOG.info("retrieving data from spacewalk")
     sw_user_list = client.get_user_list()
@@ -515,23 +514,28 @@ def spacewalk_sync(options):
                            system_details)
 
     # convert the system details to katello consumers
-    consumers.extend(transform_to_consumers(system_details))
+    consumers = transform_to_consumers(system_details)
     _LOG.info("found %s systems to upload into katello" % len(consumers))
+
     _LOG.info("uploading to katello...")
     names_to_uuids = get_names_to_uuids(katello_consumer_list)
+
     consumer_queue = Queue.Queue()
-    for c in consumers:
-        consumer_queue.put(c)
+    [consumer_queue.put(c) for c in consumers]
+
     start = time.time()
-    for i in range(8):
+    for i in range(CONFIG.get('main', 'threads')):
         c_thread = ConsumerThread(katello_client, names_to_uuids, consumer_queue)
         c_thread.daemon = True
         c_thread.start()
+
+    # Block until queue is processed.
     consumer_queue.join()
     finish = time.time()
     print "Total: %s" % ((finish-start)/60)
-        
-    _LOG.info("upload completed")#. updating with guest info..")
+    _LOG.info("upload completed")
+
+#    updating with guest info..")
 #    consumer_list = katello_client.getConsumers(with_details=False)
 #    upload_host_guest_mapping(consumer_list, katello_client)
 #    _LOG.info("guest upload completed")
