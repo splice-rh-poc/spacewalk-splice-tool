@@ -526,7 +526,7 @@ def spacewalk_sync(options):
     [consumer_queue.put(c) for c in consumers]
 
     start = time.time()
-    for i in range(CONFIG.get('main', 'threads')):
+    for i in range(CONFIG.getint('main', 'threads')):
         c_thread = ConsumerThread(katello_client, names_to_uuids, consumer_queue)
         c_thread.daemon = True
         c_thread.start()
