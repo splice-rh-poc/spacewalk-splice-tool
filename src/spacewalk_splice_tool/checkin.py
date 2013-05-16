@@ -46,12 +46,17 @@ CONFIG = None
 
 SAT_OWNER_PREFIX = 'satellite-'
 
-CERT_DIR = CertificateDirectory("/usr/share/rhsm/product/RHEL-6/")
+CERT_DIR_PATH = "/usr/share/rhsm/product/RHEL-6/"
+CERT_DIR = None
 
 def get_product_ids(subscribedchannels):
     """
     For the subscribed base and child channels look up product ids
     """
+    if CERT_DIR is None:
+        global CERT_DIR
+        CERT_DIR = CertificateDirectory(CERT_DIR_PATH)
+
     mapping_file = os.path.join(
         os.path.join(constants.CHANNEL_PRODUCT_ID_MAPPING_DIR,
                      utils.get_release()),
@@ -126,7 +131,7 @@ def transform_to_rcs(consumer):
     retval['hostname'] = consumer['facts']['network.hostname']
     retval['instance_identifier'] = consumer['uuid']
     retval['entitlement_status'] = consumer['entitlement_status']
-    retval['organization_id'] = str(consumer['owner']['key'])
+    retval['organization_id'] = str(consumer['environment']['organization_id'])
     retval['organization_name'] = consumer['owner']['displayName']
     retval['facts'] = transform_facts_to_rcs(consumer['facts'])
     return retval
@@ -355,16 +360,17 @@ def delete_stale_consumers(katello_client, consumer_list, system_list):
     up any systems that were deleted in spacewalk.
     """
 
-    system_id_list = map(lambda x: x['name'], system_list)
+    system_id_list = map(lambda x: x['server_id'], system_list)
 
-    consumers_to_delete = [] 
+    _LOG.debug("system id list from sw: %s" % system_id_list)
+    consumers_to_delete = []
     for consumer in consumer_list:
+        _LOG.debug("checking %s for deletion" % consumer['facts']['systemid'])
         # don't delete consumers that are not in orgs we manage!
         if not consumer['owner']['key'].startswith(SAT_OWNER_PREFIX):
             continue
-        if consumer['name'] not in system_id_list:
+        if consumer['facts']['systemid'] not in system_id_list:
             consumers_to_delete.append(consumer)
-
     
     _LOG.info("removing %s consumers that are no longer in spacewalk" % len(consumers_to_delete))
     for consumer in consumers_to_delete:

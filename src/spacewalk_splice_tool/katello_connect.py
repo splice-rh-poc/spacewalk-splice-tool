@@ -58,7 +58,7 @@ class KatelloConnection():
         self.infoapi  = CustomInfoAPI()
         s = server.KatelloServer(CONFIG.get("katello", "hostname"),
                                  CONFIG.get("katello", "port"),
-                                 'https',
+                                 CONFIG.get("katello", "proto"),
                                  CONFIG.get("katello", "api_url"))
         s.set_auth_method(BasicAuthentication(CONFIG.get("katello", "admin_user"), CONFIG.get("katello", "admin_pass")))
         server.set_active_server(s)
@@ -86,10 +86,7 @@ class KatelloConnection():
         return self.systemapi.subscription_status(system_id=system_uuid)
 
     def createOwner(self, label, name):
-        org = self.orgapi.create(name, label, "no description")
-        library = self.envapi.library_by_org(org['label'])
-        self.envapi.create(org['label'], "spacewalk_env", "spacewalk_environment", '', library['id'])
-        return org
+        return self.orgapi.create(name, label, "no description")
 
     def deleteOwner(self, name):
         # todo: error handling, not sure if orgapi will handle it
@@ -114,16 +111,14 @@ class KatelloConnection():
     def createConsumer(self, name, facts, installed_products, last_checkin,
                         sw_uuid=None, owner=None, spacewalk_server_hostname = None):
 
-        # there are six calls here! we need to work with katello to send all this stuff up at once
+        # there are four calls here! we need to work with katello to send all this stuff up at once
         consumer = self.systemapi.register(name=name, org='satellite-' + owner, environment_id=None,
-                                            facts=facts, activation_keys=None, cp_type='system')
-
-        returned = self.systemapi.update(consumer['uuid'], {'name': consumer['name'], 'installedProducts':installed_products})
+                                            facts=facts, activation_keys=None, cp_type='system', installed_products=installed_products)
 
         self.systemapi.checkin(consumer['uuid'], self._convert_date(last_checkin))
         self.systemapi.refresh_subscriptions(consumer['uuid'])
 
-        self.infoapi.add_custom_info(informable_type='system', informable_id=returned['id'],
+        self.infoapi.add_custom_info(informable_type='system', informable_id=consumer['id'],
                                         keyname='spacewalk-id', value=sw_uuid) 
 
         return consumer['uuid']
