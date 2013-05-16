@@ -394,9 +394,12 @@ class ConsumerThread(threading.Thread):
 
     def run(self):
         while True:
-            consumer = self.queue.get(True)
+            try:
+                consumer = self.queue.get()
+                print "queue size: %s" % self.queue.qsize()
+            except Queue.Empty:
+                return
             self.upload_to_katello(consumer)
-            print "queue size: %s" % self.queue.qsize()
             self.queue.task_done()
 
     def upload_to_katello(self, consumer):
@@ -420,12 +423,11 @@ class ConsumerThread(threading.Thread):
                                                 owner=consumer['owner'],
                                                 spacewalk_server_hostname=CONFIG.get('spacewalk', 'host'))
 
-def get_names(katello_client):
+def get_names_to_uuids(consumers):
     # TODO: this can go away and be refactored to use findBySpacewalkID within
     # the loop
-    consumers_from_kt = katello_client.getConsumers(with_details=False)
     names_to_uuids = {}
-    for consumer in consumers_from_kt:
+    for consumer in consumers:
         names_to_uuids[consumer['name']] = consumer['uuid']
 
     return names_to_uuids
@@ -516,14 +518,14 @@ def spacewalk_sync(options):
     consumers.extend(transform_to_consumers(system_details))
     _LOG.info("found %s systems to upload into katello" % len(consumers))
     _LOG.info("uploading to katello...")
-    names_to_uuids = get_names(katello_client)
+    names_to_uuids = get_names_to_uuids(katello_consumer_list)
     consumer_queue = Queue.Queue()
     for c in consumers:
         consumer_queue.put(c)
     start = time.time()
     for i in range(8):
         c_thread = ConsumerThread(katello_client, names_to_uuids, consumer_queue)
-        c_thread.setDaemon(True)
+        c_thread.daemon = True
         c_thread.start()
     consumer_queue.join()
     finish = time.time()
