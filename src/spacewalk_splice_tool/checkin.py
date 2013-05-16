@@ -21,7 +21,9 @@ import re
 import socket
 import sys
 import tempfile
+import threading
 import time
+import Queue
 
 from certutils import certutils
 from dateutil.tz import tzutc
@@ -51,8 +53,8 @@ def get_product_ids(subscribedchannels):
     """
     For the subscribed base and child channels look up product ids
     """
+    global CERT_DIR
     if CERT_DIR is None:
-        global CERT_DIR
         CERT_DIR = CertificateDirectory(CERT_DIR_PATH)
 
     mapping_file = os.path.join(
@@ -382,24 +384,27 @@ def upload_host_guest_mapping(host_guests, katello_client):
     """
     pass
 
-def upload_to_katello(consumers, katello_client):
-    """
-    Uploads consumer data to katello
-    """
+class ConsumerThread(threading.Thread):
 
-    # TODO: this can go away and be refactored to use findBySpacewalkID within
-    # the loop
-    consumers_from_kt = katello_client.getConsumers(with_details=False)
-    names_to_uuids = {}
-    for consumer in consumers_from_kt:
-        names_to_uuids[consumer['name']] = consumer['uuid']
+    def __init__(self, katello_client, names_to_uuids, queue):
+        self.queue = queue
+        self.katello_client = katello_client
+        self.names_to_uuids = names_to_uuids
+        threading.Thread.__init__(self)
 
-    done = 0
-    for consumer in consumers:
-        if (done % 10) == 0:
-            _LOG.info("%s consumers uploaded so far." % done)
-        if katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id']):
-            katello_client.updateConsumer(cp_uuid=names_to_uuids[consumer['name']],
+    def run(self):
+        while True:
+            consumer = self.queue.get(True)
+            self.upload_to_katello(consumer)
+            print "queue size: %s" % self.queue.qsize()
+            self.queue.task_done()
+
+    def upload_to_katello(self, consumer):
+        """
+        Uploads consumer data to katello
+        """
+        if self.katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id']):
+            self.katello_client.updateConsumer(cp_uuid=self.names_to_uuids[consumer['name']],
                                           sw_id = consumer['id'],
                                           name = consumer['name'],
                                           facts=consumer['facts'],
@@ -407,14 +412,24 @@ def upload_to_katello(consumers, katello_client):
                                           owner=consumer['owner'],
                                           last_checkin=consumer['last_checkin'])
         else:
-            uuid = katello_client.createConsumer(name=consumer['name'],
+            uuid = self.katello_client.createConsumer(name=consumer['name'],
                                                 sw_uuid=consumer['id'],
                                                 facts=consumer['facts'],
                                                 installed_products=consumer['installed_products'],
                                                 last_checkin=consumer['last_checkin'],
                                                 owner=consumer['owner'],
                                                 spacewalk_server_hostname=CONFIG.get('spacewalk', 'host'))
-        done += 1
+
+def get_names(katello_client):
+    # TODO: this can go away and be refactored to use findBySpacewalkID within
+    # the loop
+    consumers_from_kt = katello_client.getConsumers(with_details=False)
+    names_to_uuids = {}
+    for consumer in consumers_from_kt:
+        names_to_uuids[consumer['name']] = consumer['uuid']
+
+    return names_to_uuids
+
 
 def get_checkin_config():
     return {
@@ -501,7 +516,19 @@ def spacewalk_sync(options):
     consumers.extend(transform_to_consumers(system_details))
     _LOG.info("found %s systems to upload into katello" % len(consumers))
     _LOG.info("uploading to katello...")
-    upload_to_katello(consumers, katello_client)
+    names_to_uuids = get_names(katello_client)
+    consumer_queue = Queue.Queue()
+    for c in consumers:
+        consumer_queue.put(c)
+    start = time.time()
+    for i in range(8):
+        c_thread = ConsumerThread(katello_client, names_to_uuids, consumer_queue)
+        c_thread.setDaemon(True)
+        c_thread.start()
+    consumer_queue.join()
+    finish = time.time()
+    print "Total: %s" % ((finish-start)/60)
+        
     _LOG.info("upload completed")#. updating with guest info..")
 #    consumer_list = katello_client.getConsumers(with_details=False)
 #    upload_host_guest_mapping(consumer_list, katello_client)
