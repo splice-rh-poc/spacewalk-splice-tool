@@ -123,9 +123,6 @@ def transform_to_rcs(consumer):
     retval['date'] = consumer['checkin_time']
     retval['name'] = consumer['name']
     retval['service_level'] = consumer['serviceLevel']
-    # these two fields are populated by rcs
-    retval['created'] = ""
-    retval['updated'] = ""
     retval['hostname'] = consumer['facts']['network.hostname']
     retval['instance_identifier'] = consumer['uuid']
     retval['entitlement_status'] = consumer['entitlement_status']
@@ -147,6 +144,8 @@ def transform_to_consumers(system_details):
         facts_data = facts.translate_sw_facts_to_subsmgr(details)
         # assume 3.1, so large certs can bind to this consumer
         facts_data['system.certificate_version'] = '3.1'
+        facts_data['spacewalk-server-hostname'] = CONFIG.get("spacewalk", "host")
+
         consumer = dict()
         consumer['id'] = details['server_id']
         consumer['facts'] = facts_data
@@ -423,8 +422,7 @@ def upload_to_katello(consumers, katello_client):
                                                 facts=consumer['facts'],
                                                 installed_products=consumer['installed_products'],
                                                 last_checkin=consumer['last_checkin'],
-                                                owner=consumer['owner'],
-                                                spacewalk_server_hostname=CONFIG.get('spacewalk', 'host'))
+                                                owner=consumer['owner'])
             _LOG.debug("created consumer %s" % uuid)
         done += 1
 

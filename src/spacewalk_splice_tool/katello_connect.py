@@ -119,7 +119,7 @@ class KatelloConnection():
         return
         
     def createConsumer(self, name, facts, installed_products, last_checkin,
-                        sw_uuid=None, owner=None, spacewalk_server_hostname = None):
+                        sw_uuid=None, owner=None):
 
         # there are four calls here! we need to work with katello to send all this stuff up at once
         consumer = self.systemapi.register(name=name, org='satellite-' + owner, environment_id=None,
