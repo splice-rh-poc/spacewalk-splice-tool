@@ -101,12 +101,22 @@ class KatelloConnection():
     def deleteUser(self, user_id):
         return self.userapi.delete(user_id=user_id)
 
+    def getSpacewalkID(self, object_id):
+        # this wants an object ID
+        info_list = self.infoapi.get_custom_info(informable_type='system', informable_id=object_id)
+        for info in info_list:
+            if info['keyname'] == 'spacewalk-id':
+                return info['value']
+
     def findBySpacewalkID(self, org, spacewalk_id):
         result = self.systemapi.find_by_custom_info(org, 'spacewalk-id', spacewalk_id)
         if len(result) > 1:
             raise Exception("more than one record found for spacewalk ID %s in org %s!" % (spacewalk_id, org))
 
-        return result
+        # we're guaranteed at this point to have zero or one records
+        if result:
+            return result[0]
+        return
         
     def createConsumer(self, name, facts, installed_products, last_checkin,
                         sw_uuid=None, owner=None, spacewalk_server_hostname = None):
@@ -124,8 +134,9 @@ class KatelloConnection():
         return consumer['uuid']
         
 
-    
-    def updateConsumer(self, name, cp_uuid, facts, installed_products, last_checkin, sw_id, owner=None, guest_uuids=None,
+   
+    # katello demands a name here 
+    def updateConsumer(self, cp_uuid, name, facts=None, installed_products=None, last_checkin=None, owner=None, guest_uuids=None,
                         release=None, service_level=None):
         params = {}
         params['name'] = name
@@ -142,7 +153,8 @@ class KatelloConnection():
 
         # three rest calls, just one would be better
         self.systemapi.update(cp_uuid, params)
-        self.systemapi.checkin(cp_uuid, self._convert_date(last_checkin))
+        if last_checkin is not None:
+            self.systemapi.checkin(cp_uuid, self._convert_date(last_checkin))
         self.systemapi.refresh_subscriptions(cp_uuid)
 
     def getConsumers(self, owner=None, with_details=True):

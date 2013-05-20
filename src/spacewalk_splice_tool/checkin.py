@@ -242,6 +242,7 @@ def update_owners(katello_client, orgs):
     owners = katello_client.getOwners()
     org_ids = orgs.keys()
     owner_labels = map(lambda x: x['label'], owners)
+    _LOG.debug("owner label list from katello: %s" % owner_labels)
 
     for org_id in org_ids:
         katello_label = SAT_OWNER_PREFIX + org_id
@@ -375,37 +376,47 @@ def delete_stale_consumers(katello_client, consumer_list, system_list):
         _LOG.info("removed consumer %s" % consumer['name'])
         katello_client.deleteConsumer(consumer['uuid'])
 
-def upload_host_guest_mapping(host_guests, katello_client):
+def upload_host_guest_mapping(host_guests, katello_consumer_list, katello_client):
     """
     updates katello consumers that have guests. This has to happen after an
     initial update, so we have UUIDs for all systems
     """
-    pass
+    sysid_consumer_map = {}
+    for consumer in katello_consumer_list:
+      sysid = katello_client.getSpacewalkID(consumer['id'])
+      sysid_consumer_map[sysid] = consumer['uuid']
 
+    for host_guest in host_guests:
+        host_consumer_id = sysid_consumer_map[host_guest['server_id']]
+
+        guest_consumer_ids = []
+        for sw_guest in host_guest['guests'].split(';'):
+            guest_consumer_ids.append(sysid_consumer_map[sw_guest])
+
+        _LOG.debug("detected guest IDs %s for host %s" % (guest_consumer_ids, host_consumer_id))
+
+        # TODO: katello requires the name here
+        #katello_client.updateConsumer(name = 'foo', cp_uuid=host_consumer_id, guest_uuids=guest_consumer_ids)
+        
 def upload_to_katello(consumers, katello_client):
     """
     Uploads consumer data to katello
     """
 
-    # TODO: this can go away and be refactored to use findBySpacewalkID within
-    # the loop
-    consumers_from_kt = katello_client.getConsumers(with_details=False)
-    names_to_uuids = {}
-    for consumer in consumers_from_kt:
-        names_to_uuids[consumer['name']] = consumer['uuid']
-
     done = 0
     for consumer in consumers:
         if (done % 10) == 0:
             _LOG.info("%s consumers uploaded so far." % done)
-        if katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id']):
-            katello_client.updateConsumer(cp_uuid=names_to_uuids[consumer['name']],
-                                          sw_id = consumer['id'],
+        kt_consumer = katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id'])
+        if kt_consumer:
+            # use the existing kt/cp uuid when updating
+            katello_client.updateConsumer(cp_uuid=kt_consumer['uuid'],
                                           name = consumer['name'],
                                           facts=consumer['facts'],
                                           installed_products=consumer['installed_products'],
                                           owner=consumer['owner'],
                                           last_checkin=consumer['last_checkin'])
+            _LOG.debug("updated consumer %s" % kt_consumer['uuid'])
         else:
             uuid = katello_client.createConsumer(name=consumer['name'],
                                                 sw_uuid=consumer['id'],
@@ -414,6 +425,7 @@ def upload_to_katello(consumers, katello_client):
                                                 last_checkin=consumer['last_checkin'],
                                                 owner=consumer['owner'],
                                                 spacewalk_server_hostname=CONFIG.get('spacewalk', 'host'))
+            _LOG.debug("created consumer %s" % uuid)
         done += 1
 
 def get_checkin_config():
@@ -502,10 +514,11 @@ def spacewalk_sync(options):
     _LOG.info("found %s systems to upload into katello" % len(consumers))
     _LOG.info("uploading to katello...")
     upload_to_katello(consumers, katello_client)
-    _LOG.info("upload completed")#. updating with guest info..")
-#    consumer_list = katello_client.getConsumers(with_details=False)
-#    upload_host_guest_mapping(consumer_list, katello_client)
-#    _LOG.info("guest upload completed")
+    _LOG.info("upload completed. updating with guest info..")
+    # refresh the consumer list. we need the full details here to get at the system ID
+    katello_consumer_list = katello_client.getConsumers(with_details=False)
+    upload_host_guest_mapping(hosts_guests, katello_consumer_list, katello_client)
+    _LOG.info("guest upload completed")
 
 
 def splice_sync(options):

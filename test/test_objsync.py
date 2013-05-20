@@ -161,4 +161,15 @@ class TestObjectSync(SpliceToolTest):
 
         # ensure user "bazbaz" had full admin rights revoked 
         self.cp_client.ungrantFullAdmin.assert_called_once_with(kt_user=user_matcher)
-        
+
+#    def test_host_guests(self):
+#        host_guest_list = [{'server_id': '1000010111', 'guests': '1000010112'},
+#                            {'server_id': '1000010126', 'guests': '1000010127;1000010130;1000010128;1000010129'}
+#                            ]
+#        kt_consumer_list = [
+#                            { 'id': 1},
+#                            { 'id': 2},
+#                            { 'id': 3}
+#                         ]
+#        checkin.upload_host_guest_mapping(host_guest_list, kt_consumer_list, self.cp_client)
+#        

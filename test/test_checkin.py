@@ -67,6 +67,8 @@ class CheckinTest(SpliceToolTest):
         mocked_sw_client.get_system_list.return_value = system_list
         mocked_sw_client.get_channel_list.return_value = channel_list
         mocked_sw_client.get_org_list.return_value = org_list
+        # this should be populated eventually
+        mocked_sw_client.get_host_guest_list.return_value = []
 
         mocked_cp_client.getOwners.return_value = owner_list
         mocked_cp_client.getRedhatProvider.return_value = provider
@@ -89,9 +91,6 @@ class CheckinTest(SpliceToolTest):
         self.assertTrue(upload_to_cp.called)
         self.assertEquals(2, len(upload_to_cp.call_args[0][0]))
 
-    def test_host_guest_sync(self):
-        mocked_cp_client = Mock()
-        checkin.upload_host_guest_mapping(consumer_list, mocked_cp_client)
 
 
 user_list = [{'username': 'admin', 
