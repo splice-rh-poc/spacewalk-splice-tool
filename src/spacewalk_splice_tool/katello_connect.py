@@ -70,6 +70,10 @@ class KatelloConnection():
     def createDistributor(self, name, root_org):
         return self.distributorapi.create(name=name, org=root_org, environment_id=None)
 
+    def deleteDistributor(self, name, root_org):
+        dist_uuid = self.distributorapi.distributor_by_name(distName=name, orgName=root_org)['uuid']
+        return self.distributorapi.delete(distributor_uuid=dist_uuid)
+
     def exportManifest(self, dist_uuid):
         return self.distributorapi.export_manifest(distributor_uuid = dist_uuid)
 
@@ -124,6 +128,13 @@ class KatelloConnection():
         # there are four calls here! we need to work with katello to send all this stuff up at once
         consumer = self.systemapi.register(name=name, org='satellite-' + owner, environment_id=None,
                                             facts=facts, activation_keys=None, cp_type='system', installed_products=installed_products)
+
+        #TODO: get rid of this extra call!
+        facts = consumer['facts']
+        if facts.has_key('virt.is_guest'):
+            facts['virt.uuid'] =  consumer['uuid']
+            self.updateConsumer(name = consumer['name'], cp_uuid = consumer['uuid'], facts = facts)
+
 
         self.systemapi.checkin(consumer['uuid'], self._convert_date(last_checkin))
         self.systemapi.refresh_subscriptions(consumer['uuid'])
@@ -236,5 +247,3 @@ if __name__ == '__main__':
     print "Rules = %s" % (kc.getRules())
     print "Pools = %s" % (kc.getPools())
     print "Product = %s" % (kc.getProducts())
-
-

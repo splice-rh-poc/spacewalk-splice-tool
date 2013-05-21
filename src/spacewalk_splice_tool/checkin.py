@@ -284,7 +284,10 @@ def update_owners(katello_client, orgs):
         # get the org ID from the katello name
         kt_org_id = owner_label[len(SAT_OWNER_PREFIX):]
         if kt_org_id not in org_ids:
-            _LOG.info("removing owner %s (name: %s), owner is no longer in spacewalk" % (owner_label, owner_labels_names[owner_label]))
+            _LOG.info("removing owner %s (name: %s) and associated distributor, owner is no longer in spacewalk"
+                                %  (owner_label, owner_labels_names[owner_label]))
+            # this is broken right now, https://github.com/Katello/katello/issues/2342
+            #katello_client.deleteDistributor(name="Distributor for %s" % owner_labels_names[owner_label], root_org='satellite-1')
             katello_client.deleteOwner(name=owner_labels_names[owner_label])
             
 
@@ -383,19 +386,20 @@ def upload_host_guest_mapping(host_guests, katello_consumer_list, katello_client
     sysid_consumer_map = {}
     for consumer in katello_consumer_list:
       sysid = katello_client.getSpacewalkID(consumer['id'])
-      sysid_consumer_map[sysid] = consumer['uuid']
+      # katello requires both uuid and name
+      sysid_consumer_map[sysid] = (consumer['uuid'], consumer['name'])
 
     for host_guest in host_guests:
-        host_consumer_id = sysid_consumer_map[host_guest['server_id']]
+        host_consumer_id_name = sysid_consumer_map[host_guest['server_id']]
 
         guest_consumer_ids = []
         for sw_guest in host_guest['guests'].split(';'):
-            guest_consumer_ids.append(sysid_consumer_map[sw_guest])
+            # we only want the first piece of the tuple here
+            guest_consumer_ids.append(sysid_consumer_map[sw_guest][0])
 
-        _LOG.debug("detected guest IDs %s for host %s" % (guest_consumer_ids, host_consumer_id))
+        _LOG.debug("detected guest IDs %s for host %s" % (guest_consumer_ids, host_consumer_id_name))
 
-        # TODO: katello requires the name here
-        #katello_client.updateConsumer(name = 'foo', cp_uuid=host_consumer_id, guest_uuids=guest_consumer_ids)
+        katello_client.updateConsumer(name = host_consumer_id_name[1], cp_uuid=host_consumer_id_name[0], guest_uuids=guest_consumer_ids)
         
 def upload_to_katello(consumers, katello_client):
     """

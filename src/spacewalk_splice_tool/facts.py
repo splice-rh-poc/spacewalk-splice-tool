@@ -27,7 +27,7 @@ def translate_sw_facts_to_subsmgr(system_details):
     facts.update(cpu_facts(system_details))
     facts.update(network_facts(system_details))
     facts.update(memory_facts(system_details))
-    #facts.update(guest_facts(system_details))
+    facts.update(guest_facts(system_details))
     return facts
 
 
@@ -110,8 +110,9 @@ def network_facts(nwkinfo):
 
 def guest_facts(guestinfo):
     guest_facts_dict = dict()
-    if guestinfo.has_key('active_guest_info'):
-        guest_facts_dict['active_guest_info'] = guestinfo['active_guest_info']
+    if guestinfo.has_key('virtual_host') and guestinfo['virtual_host'] is not "":
+        guest_facts_dict['virt.is_guest'] = True
+        guest_facts_dict['virt.host_type'] = 'Unknown'
     return guest_facts_dict
 
 def inactive_facts(details):
