@@ -156,6 +156,9 @@ class KatelloConnection():
         if guest_uuids is not None:
             params['guestIds'] = guest_uuids
         if facts is not None:
+            # this logic should be moved elsewhere
+            if facts.has_key('virt.is_guest'):
+                facts['virt.uuid'] =  cp_uuid
             params['facts'] = facts
         if release is not None:
             params['releaseVer'] = release
