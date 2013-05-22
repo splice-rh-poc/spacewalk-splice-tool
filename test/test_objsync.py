@@ -47,8 +47,8 @@ class TestObjectSync(SpliceToolTest):
                         {'username': 'bazbaz', 'id': 3, 'email': 'bazbaz@foo.com'},
                         {'username': 'foo', 'id': 2, 'email': 'bazbaz@foo.com'}]
 
-        kt_roles_for_org_admin = [{ 'id': 5, 'name': 'Org Admin Role for satellite-1'}]
-        kt_roles_for_full_admin = [{ 'id': 5, 'name': 'Org Admin Role for satellite-1'},
+        kt_roles_for_org_admin = [{ 'id': 5, 'name': 'Org Admin Role for Awesome Org'}]
+        kt_roles_for_full_admin = [{ 'id': 5, 'name': 'Org Admin Role for Awesome Org'},
                                    { 'id': 6, 'name': 'Administrator'}]
 
         def return_role(*args, **kwargs):
@@ -139,13 +139,13 @@ class TestObjectSync(SpliceToolTest):
                         'role': 'Organization Administrator', 'organization': 'foo org',
                         'email': 'bar@foo.com'},
                         {'username': 'bazbaz', 'user_id': '3', 'organization_id': '1',
-                        'role': '', 'organization': 'foo org', 'email': 'baz@foo.com'}]
+                        'role': '', 'organization': 'Awesome Org', 'email': 'baz@foo.com'}]
         checkin.update_roles(self.cp_client, sw_userlist)
 
         # user "foo" is an org admin on sat org 1, and needs to get added to
         # satellite-1 in katello
         user_matcher = TestObjectSync.Matcher(self.user_compare, {'username': 'foo'})
-        expected = [call(kt_user=user_matcher, kt_org_label='satellite-1')]
+        expected = [call(kt_user=user_matcher, kt_org_name='Awesome Org')]
         result = self.cp_client.grantOrgAdmin.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
 
@@ -155,7 +155,7 @@ class TestObjectSync(SpliceToolTest):
         # user "bazbaz" is not an org admin on sat org 1, and needs to get removed from
         # satellite-1 in katello
         user_matcher = TestObjectSync.Matcher(self.user_compare, {'username': 'bazbaz'})
-        expected = [call(kt_user=user_matcher, kt_org_label='satellite-1')]
+        expected = [call(kt_user=user_matcher, kt_org_name='Awesome Org')]
         result = self.cp_client.ungrantOrgAdmin.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
 
