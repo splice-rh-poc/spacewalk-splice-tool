@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.13
+Version:        0.14
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -70,6 +70,22 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Wed May 22 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- use org name instead of org label on roles (cduryee@redhat.com)
+- update virt uuid fact if needed (cduryee@redhat.com)
+- host/guest mappings (cduryee@redhat.com)
+- send up spacewalk hostname, remove unused fields (cduryee@redhat.com)
+- send installed products as part of registration (cduryee@redhat.com)
+- use katello org id here, per wes (cduryee@redhat.com)
+- fix deletion (cduryee@redhat.com)
+- Make http protocol configurable since running katello out of a checkout uses
+  http, not https (jslagle@redhat.com)
+- Initialize CERT_DIR lazily instead of on import, but still only once
+  (jslagle@redhat.com)
+- do not create default environment anymore (cduryee@redhat.com)
+- fix subscription_status call (cduryee@redhat.com)
+- initialize certificatedirectory sooner (cduryee@redhat.com)
+
 * Tue May 14 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - use owner key instead of ID when populating MPU (cduryee@redhat.com)
 - Set default socket timeout from config file (jslagle@redhat.com)
