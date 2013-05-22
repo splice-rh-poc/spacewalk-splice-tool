@@ -326,29 +326,30 @@ def update_roles(katello_client, sw_userlist):
         # get a flat list of role names, for comparison with sw
         kt_roles = map(lambda x: x['name'], katello_client.getRoles(user_id = kt_users[kt_username]['id']))
         sw_roles = sw_users[kt_username]['role'].split(';')
-        sw_user_org = sw_users[kt_username]['organization']
+        sw_user_org = sw_users[kt_username]['organization_id']
 
 
         # add any new roles
         for sw_role in sw_roles:
             _LOG.debug("examining sw role %s for org %s against kt role set %s" % (sw_role, sw_user_org,  kt_roles))
             if sw_role == 'Organization Administrator' and \
-                "Org Admin Role for %s" % sw_user_org not in kt_roles:
-                    _LOG.info("adding %s to %s org admin role in katello" % (kt_username, sw_user_org))
+                "Org Admin Role for satellite-%s" % sw_user_org not in kt_roles:
+                    _LOG.info("adding %s to %s org admin role in katello" % (kt_username, "satellite-%s" % sw_user_org))
                     katello_client.grantOrgAdmin(
-                        kt_user=kt_users[kt_username], kt_org_name = sw_user_org)
+                        kt_user=kt_users[kt_username], kt_org_label = "satellite-%s" % sw_user_org)
             elif sw_role == 'Satellite Administrator' and 'Administrator' not in kt_roles:
                     _LOG.info("adding %s to full admin role in katello" % kt_username)
                     katello_client.grantFullAdmin(kt_user=kt_users[kt_username])
 
         # delete any roles in kt but not sw
         for kt_role in kt_roles:
+            # TODO: handle sat admin
             _LOG.debug("examining kt role %s against sw role set %s for org %s" % (kt_role, sw_roles, sw_user_org))
-            if kt_role == "Org Admin Role for %s" % sw_users[kt_username]['organization'] and \
+            if kt_role == "Org Admin Role for satellite-%s" % sw_users[kt_username]['organization_id'] and \
                 "Organization Administrator" not in sw_roles:
-                _LOG.info("removing %s from %s org admin role in katello" % (kt_username, sw_user_org))
+                _LOG.info("removing %s from %s org admin role in katello" % (kt_username, "satellite-%s" % sw_user_org))
                 katello_client.ungrantOrgAdmin(kt_user=kt_users[kt_username],
-                                kt_org_name = sw_user_org)
+                                kt_org_label = "satellite-%s" % sw_user_org)
             elif kt_role == 'Administrator' and sw_role != 'Satellite Administrator':
                     _LOG.info("removing %s from full admin role in katello" % kt_username)
                     katello_client.ungrantFullAdmin(kt_user=kt_users[kt_username])

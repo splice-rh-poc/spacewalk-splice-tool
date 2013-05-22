@@ -216,12 +216,12 @@ class KatelloConnection():
                                          description="generated from spacewalk", type_in="organizations", verbs=None,
                                          tagIds=None, orgId=kt_org_label, all_tags=True, all_verbs=True)
 
-    def grantOrgAdmin(self, kt_user, kt_org_name):
-        oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_name)
+    def grantOrgAdmin(self, kt_user, kt_org_label):
+        oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_label)
         self.userapi.assign_role(user_id=kt_user['id'], role_id=oa_role['id'])
 
-    def ungrantOrgAdmin(self, kt_user, kt_org_name):
-        oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_name)
+    def ungrantOrgAdmin(self, kt_user, kt_org_label):
+        oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_label)
         self.userapi.unassign_role(user_id=kt_user['id'], role_id=oa_role['id'])
 
     def grantFullAdmin(self, kt_user):
