@@ -210,25 +210,29 @@ class KatelloConnection():
         else:
             return self.rolesapi.roles()
 
-    def createOrgAdminRolePermission(self, kt_org_label):
-        role = self.rolesapi.create(name="Org Admin Role for %s" % kt_org_label, description="generated from spacewalk")
-        perm = self.permissionapi.create(roleId = role['id'], name = "Org Admin Permission for %s" % kt_org_label,
+    def createOrgAdminRolePermission(self, kt_org_name):
+        role = self.rolesapi.create(name="Org Admin Role for %s" % kt_org_name, description="generated from spacewalk")
+        perm = self.permissionapi.create(roleId = role['id'], name = "Org Admin Permission for %s" % kt_org_name,
                                          description="generated from spacewalk", type_in="organizations", verbs=None,
-                                         tagIds=None, orgId=kt_org_label, all_tags=True, all_verbs=True)
+                                         tagIds=None, orgId=kt_org_name, all_tags=True, all_verbs=True)
 
-    def grantOrgAdmin(self, kt_user, kt_org_label):
-        oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_label)
+    def grantOrgAdmin(self, kt_user, kt_org_name):
+        oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_name)
+        if not oa_role:
+            _LOG.error("could not obtain org admin role from katello for org %s!" % kt_org_name)
         self.userapi.assign_role(user_id=kt_user['id'], role_id=oa_role['id'])
 
-    def ungrantOrgAdmin(self, kt_user, kt_org_label):
-        oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_label)
+    def ungrantOrgAdmin(self, kt_user, kt_org_name):
+        oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_name)
         self.userapi.unassign_role(user_id=kt_user['id'], role_id=oa_role['id'])
 
     def grantFullAdmin(self, kt_user):
         admin_role = self.rolesapi.role_by_name(name="Administrator")
+        if not admin_role:
+            _LOG.error("could not obtain Administrator role from katello!")
         self.userapi.assign_role(user_id=kt_user['id'], role_id=admin_role['id'])
 
-    def ungrantFullAdmin(self, kt_user, kt_org_label):
+    def ungrantFullAdmin(self, kt_user):
         admin_role = self.rolesapi.role_by_name(name="Administrator")
         self.userapi.unassign_role(user_id=kt_user['id'], role_id=admin_role['id'])
 

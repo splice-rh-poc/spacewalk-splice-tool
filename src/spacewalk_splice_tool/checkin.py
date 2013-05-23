@@ -67,6 +67,8 @@ def get_product_ids(subscribedchannels):
         if origin_channel in channel_mappings:
             cert = channel_mappings[origin_channel]
             product_ids.append(cert.split('-')[-1].split('.')[0])
+
+    _LOG.debug("mapped subscribed channels %s to installed products %s" % (subscribedchannels, product_ids))
     # reformat to how candlepin expects the product id list
     installed_products = []
     for p in product_ids:
@@ -248,7 +250,7 @@ def update_owners(katello_client, orgs):
         if katello_label not in owner_labels:
             _LOG.info("creating owner %s (%s), owner is in spacewalk but not katello" % (katello_label, orgs[org_id]))
             katello_client.createOwner(label=katello_label, name=orgs[org_id])
-            katello_client.createOrgAdminRolePermission(kt_org_label=katello_label)
+            katello_client.createOrgAdminRolePermission(kt_org_name=orgs[org_id])
             # if we are not the first org, create a distributor for us in the first org
             if org_id is not "1":
                 _LOG.info("creating distributor for %s (org id: %s)" % (orgs[org_id], org_id)) 
@@ -326,17 +328,17 @@ def update_roles(katello_client, sw_userlist):
         # get a flat list of role names, for comparison with sw
         kt_roles = map(lambda x: x['name'], katello_client.getRoles(user_id = kt_users[kt_username]['id']))
         sw_roles = sw_users[kt_username]['role'].split(';')
-        sw_user_org = sw_users[kt_username]['organization_id']
+        sw_user_org = sw_users[kt_username]['organization']
 
 
         # add any new roles
         for sw_role in sw_roles:
             _LOG.debug("examining sw role %s for org %s against kt role set %s" % (sw_role, sw_user_org,  kt_roles))
             if sw_role == 'Organization Administrator' and \
-                "Org Admin Role for satellite-%s" % sw_user_org not in kt_roles:
-                    _LOG.info("adding %s to %s org admin role in katello" % (kt_username, "satellite-%s" % sw_user_org))
+                "Org Admin Role for %s" % sw_user_org not in kt_roles:
+                    _LOG.info("adding %s to %s org admin role in katello" % (kt_username, sw_user_org))
                     katello_client.grantOrgAdmin(
-                        kt_user=kt_users[kt_username], kt_org_label = "satellite-%s" % sw_user_org)
+                        kt_user=kt_users[kt_username], kt_org_name = sw_user_org)
             elif sw_role == 'Satellite Administrator' and 'Administrator' not in kt_roles:
                     _LOG.info("adding %s to full admin role in katello" % kt_username)
                     katello_client.grantFullAdmin(kt_user=kt_users[kt_username])
@@ -345,11 +347,11 @@ def update_roles(katello_client, sw_userlist):
         for kt_role in kt_roles:
             # TODO: handle sat admin
             _LOG.debug("examining kt role %s against sw role set %s for org %s" % (kt_role, sw_roles, sw_user_org))
-            if kt_role == "Org Admin Role for satellite-%s" % sw_users[kt_username]['organization_id'] and \
+            if kt_role == "Org Admin Role for %s" % sw_users[kt_username]['organization'] and \
                 "Organization Administrator" not in sw_roles:
-                _LOG.info("removing %s from %s org admin role in katello" % (kt_username, "satellite-%s" % sw_user_org))
+                _LOG.info("removing %s from %s org admin role in katello" % (kt_username, sw_user_org))
                 katello_client.ungrantOrgAdmin(kt_user=kt_users[kt_username],
-                                kt_org_label = "satellite-%s" % sw_user_org)
+                                kt_org_name = sw_user_org)
             elif kt_role == 'Administrator' and sw_role != 'Satellite Administrator':
                     _LOG.info("removing %s from full admin role in katello" % kt_username)
                     katello_client.ungrantFullAdmin(kt_user=kt_users[kt_username])
