@@ -52,7 +52,7 @@ class SpacewalkClient(object):
         return self.get_db_output('splice-export')
 
     def get_host_guest_list(self):
-        return self.get_db_output('hostguests')
+        return self.get_db_output('host-guests')
 
     def get_channel_list(self):
         return self.get_db_output('cloned-channels')

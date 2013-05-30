@@ -288,8 +288,7 @@ def update_owners(katello_client, orgs):
         if kt_org_id not in org_ids:
             _LOG.info("removing owner %s (name: %s) and associated distributor, owner is no longer in spacewalk"
                                 %  (owner_label, owner_labels_names[owner_label]))
-            # this is broken right now, https://github.com/Katello/katello/issues/2342
-            #katello_client.deleteDistributor(name="Distributor for %s" % owner_labels_names[owner_label], root_org='satellite-1')
+            katello_client.deleteDistributor(name="Distributor for %s" % owner_labels_names[owner_label], root_org='satellite-1')
             katello_client.deleteOwner(name=owner_labels_names[owner_label])
             
 
