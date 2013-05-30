@@ -52,9 +52,8 @@ CERT_DIR = None
 
 class ConsumerThread(threading.Thread):
 
-    def __init__(self, katello_client, names_to_uuids, queue):
+    def __init__(self, names_to_uuids, queue):
         self.queue = queue
-        self.katello_client = katello_client
         self.names_to_uuids = names_to_uuids
         threading.Thread.__init__(self)
 
@@ -67,15 +66,18 @@ class ConsumerThread(threading.Thread):
                 consumer = self.queue.get()
             except Queue.Empty:
                 return
-            self.upload_to_katello(consumer)
-            self.queue.task_done()
+            try:
+                self.upload_to_katello(consumer)
+            finally:
+                self.queue.task_done()
 
     def upload_to_katello(self, consumer):
         """
         Uploads consumer data to katello
         """
-        if self.katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id']):
-            self.katello_client.updateConsumer(cp_uuid=self.names_to_uuids[consumer['name']],
+        katello_client = KatelloConnection()
+        if katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id']):
+            katello_client.updateConsumer(cp_uuid=self.names_to_uuids[consumer['name']],
                                           sw_id = consumer['id'],
                                           name = consumer['name'],
                                           facts=consumer['facts'],
@@ -83,7 +85,7 @@ class ConsumerThread(threading.Thread):
                                           owner=consumer['owner'],
                                           last_checkin=consumer['last_checkin'])
         else:
-            uuid = self.katello_client.createConsumer(name=consumer['name'],
+            uuid = katello_client.createConsumer(name=consumer['name'],
                                                 sw_uuid=consumer['id'],
                                                 facts=consumer['facts'],
                                                 installed_products=consumer['installed_products'],
@@ -530,7 +532,7 @@ def spacewalk_sync(options):
     start = time.time()
     _LOG.info("%s consumers left to process" % len(consumers))
     for i in range(CONFIG.getint('main', 'threads')):
-        c_thread = ConsumerThread(katello_client, names_to_uuids, consumer_queue)
+        c_thread = ConsumerThread(names_to_uuids, consumer_queue)
         c_thread.daemon = True
         c_thread.start()
 
