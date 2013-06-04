@@ -241,7 +241,8 @@ def update_owners(katello_client, orgs):
     """
 
     owners = katello_client.getOwners()
-    org_ids = orgs.keys()
+    # we need to iterate over a sorted list, to ensure org #1 is created before others
+    org_ids = sorted(orgs.keys())
     owner_labels = map(lambda x: x['label'], owners)
     _LOG.debug("owner label list from katello: %s" % owner_labels)
 
