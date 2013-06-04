@@ -17,6 +17,7 @@ Requires: python-oauth2
 Requires: subscription-manager-migration-data
 Requires: splice-common >= 0.77
 Requires: /usr/sbin/crond
+Requires: katello-cli
 
 %description
 A tool for gathering system checkin data from spacewalk server and report to Splice server
