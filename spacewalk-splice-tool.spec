@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.15
+Version:        0.16
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -70,6 +70,13 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Tue Jun 04 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- utf8 fix and org ordering fix (cduryee@redhat.com)
+- re-enable distributor delete, and change report name (cduryee@redhat.com)
+- use checkin_date on mpu, not date (cduryee@redhat.com)
+- add host/guest mapping report (cduryee@redhat.com)
+- use org name instead of label for roles (cduryee@redhat.com)
+
 * Wed May 22 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - Revert "use org name instead of org label on roles" (cduryee@redhat.com)
 
