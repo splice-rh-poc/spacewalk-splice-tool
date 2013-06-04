@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.16
+Version:        0.17
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -71,6 +71,10 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Tue Jun 04 2013 James Slagle <jslagle@redhat.com> 0.17-1
+- Require katello-cli (jslagle@redhat.com)
+- Add releasers.conf (jslagle@redhat.com)
+
 * Tue Jun 04 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - utf8 fix and org ordering fix (cduryee@redhat.com)
 - re-enable distributor delete, and change report name (cduryee@redhat.com)
