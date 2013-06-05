@@ -118,20 +118,22 @@ def transform_to_rcs(consumer):
     convert a katello consumer into something parsable by RCS
     as a MarketingProductUsage obj
     """
-
     retval = {}
 
-    retval['splice_server'] = _get_splice_server_uuid()
-    retval['checkin_date'] = consumer['checkin_time']
-    retval['name'] = consumer['name']
-    retval['service_level'] = consumer['serviceLevel']
-    retval['hostname'] = consumer['facts']['network.hostname']
-    retval['instance_identifier'] = consumer['uuid']
-    retval['entitlement_status'] = consumer['entitlement_status']
-    retval['organization_id'] = str(consumer['environment']['organization_id'])
-    retval['organization_name'] = consumer['owner']['displayName']
-    retval['facts'] = transform_facts_to_rcs(consumer['facts'])
-    return retval
+    if consumer.has_key('checkin_time') and consumer['checkin_time'] is not None:
+        retval['splice_server'] = _get_splice_server_uuid()
+        retval['checkin_date'] = consumer['checkin_time']
+        retval['name'] = consumer['name']
+        retval['service_level'] = consumer['serviceLevel']
+        retval['hostname'] = consumer['facts']['network.hostname']
+        retval['instance_identifier'] = consumer['uuid']
+        retval['entitlement_status'] = consumer['entitlement_status']
+        retval['organization_id'] = str(consumer['environment']['organization_id'])
+        retval['organization_name'] = consumer['owner']['displayName']
+        retval['facts'] = transform_facts_to_rcs(consumer['facts'])
+        return retval
+    else:
+        _LOG.debug("system entry for %s has no checkin_time, not loading entry into splice db" % consumer['name'])
 
 
 def transform_to_consumers(system_details):
@@ -152,7 +154,8 @@ def transform_to_consumers(system_details):
         consumer['id'] = details['server_id']
         consumer['facts'] = facts_data
         consumer['owner'] = details['org_id']
-        consumer['name'] = details['name']
+        # katello does not allow leading/trailing whitespace here
+        consumer['name'] = details['name'].strip()
         consumer['last_checkin'] = details['last_checkin_time']
         consumer['installed_products'] = details['installed_products']
 
@@ -352,7 +355,7 @@ def update_roles(katello_client, sw_userlist):
                 _LOG.info("removing %s from %s org admin role in katello" % (kt_username, sw_user_org))
                 katello_client.ungrantOrgAdmin(kt_user=kt_users[kt_username],
                                 kt_org_name = sw_user_org)
-            elif kt_role == 'Administrator' and sw_role != 'Satellite Administrator':
+            elif kt_role == 'Administrator' and 'Satellite Administrator' not in sw_roles:
                     _LOG.info("removing %s from full admin role in katello" % kt_username)
                     katello_client.ungrantFullAdmin(kt_user=kt_users[kt_username])
                 
@@ -367,14 +370,19 @@ def delete_stale_consumers(katello_client, consumer_list, system_list):
 
     _LOG.debug("system id list from sw: %s" % system_id_list)
     consumers_to_delete = []
+
     for consumer in consumer_list:
-        _LOG.debug("checking %s for deletion" % consumer['facts']['systemid'])
+        if not consumer['facts'].has_key('systemid') or consumer['facts']['systemid'] is None:
+                _LOG.debug("consumer %s has no systemid, skipping" % consumer['name'])
+                continue
         # don't delete consumers that are not in orgs we manage!
         if not consumer['owner']['key'].startswith(SAT_OWNER_PREFIX):
+            _LOG.debug("consumer %s is not in a satellite-managed owner, skipping" % consumer['name'])
             continue
         if consumer['facts']['systemid'] not in system_id_list:
+            _LOG.debug("adding consumer %s to deletion list" % consumer['name'])
             consumers_to_delete.append(consumer)
-    
+
     _LOG.info("removing %s consumers that are no longer in spacewalk" % len(consumers_to_delete))
     for consumer in consumers_to_delete:
         _LOG.info("removed consumer %s" % consumer['name'])
@@ -537,6 +545,8 @@ def splice_sync(options):
 
     # create the base marketing usage list
     rcs_mkt_usage = map(transform_to_rcs, katello_consumers)
+    # strip out blank values that we don't want to send to splice
+    rcs_mkt_usage = filter(None, rcs_mkt_usage)
 
     # enrich with product usage info
     map(lambda rmu : 

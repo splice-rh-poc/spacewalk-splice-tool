@@ -39,8 +39,8 @@ class SpacewalkClient(object):
                     stdout=subprocess.PIPE)
         stdout, stderr = process.communicate()
 
-        # TODO: better UTF-8 handling
-        reader = csv.DictReader(stdout.decode('utf-8').encode('ascii', 'ignore').splitlines())
+        # we need to re-encode so DictReader knows it's getting utf-8 data
+        reader = csv.DictReader(stdout.decode('utf-8').encode('utf-8').splitlines())
 
         #XXX: suboptimal 
         retval = []
