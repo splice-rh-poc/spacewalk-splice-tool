@@ -12,17 +12,21 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+import csv
 from datetime import datetime
 from dateutil.tz import tzutc
+import logging
+from optparse import OptionParser
 import pprint
+import StringIO
 import subprocess
 import sys
-import StringIO
-import csv
 import traceback
-from optparse import OptionParser
 
 from spacewalk_splice_tool import facts
+
+
+_LOG = logging.getLogger(__name__)
 
 
 class SpacewalkClient(object):
@@ -36,8 +40,16 @@ class SpacewalkClient(object):
         process = subprocess.Popen(
                     ['/usr/bin/ssh', '-i', self.ssh_key_path,
                      self.host, '/usr/bin/spacewalk-report', report_path], 
-                    stdout=subprocess.PIPE)
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
+
+        if process.returncode != 0:
+            _LOG.error("Error communicating with Satellite server at %s" %
+                       self.host)
+            _LOG.error(stderr)
+            _LOG.error("Exiting.")
+            sys.exit(process.returncode)
 
         # we need to re-encode so DictReader knows it's getting utf-8 data
         reader = csv.DictReader(stdout.decode('utf-8').encode('utf-8').splitlines())
