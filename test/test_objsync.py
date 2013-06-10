@@ -38,17 +38,17 @@ class TestObjectSync(SpliceToolTest):
         super(TestObjectSync, self).setUp()
 
         cp_orgs = [
-                   {'name': 'foo org', 'label': 'satellite-1',   'id': '7',   'description': 'no description'},
                    {'name': 'bar org', 'label': 'satellite-2',   'id': '9',   'description': 'no description'},
-                   {'name': 'qux org', 'label': 'NOT-A-SAT-ORG', 'id': '100', 'description': 'no description'},
+                   {'name': 'foo org', 'label': 'satellite-1',   'id': '7',   'description': 'no description'},
+                   {'name': 'foo org', 'label': 'NOT-A-SAT-ORG', 'id': '100', 'description': 'no description'},
                   ]
 
         kt_userlist = [{'username': 'admin', 'id': 1, 'email': 'admin@foo.com'},
                         {'username': 'bazbaz', 'id': 3, 'email': 'bazbaz@foo.com'},
                         {'username': 'foo', 'id': 2, 'email': 'bazbaz@foo.com'}]
 
-        kt_roles_for_org_admin = [{ 'id': 5, 'name': 'Org Admin Role for foo org'}]
-        kt_roles_for_full_admin = [{ 'id': 5, 'name': 'Org Admin Role for foo org'},
+        kt_roles_for_org_admin = [{ 'id': 5, 'name': 'Org Admin Role for satellite-1'}]
+        kt_roles_for_full_admin = [{ 'id': 5, 'name': 'Org Admin Role for satellite-1'},
                                    { 'id': 6, 'name': 'Administrator'}]
 
         def return_role(*args, **kwargs):
@@ -84,7 +84,7 @@ class TestObjectSync(SpliceToolTest):
         # TODO: actually check the file contents
         true_matcher = TestObjectSync.Matcher(self.true_compare, "x")
         self.cp_client.importManifest.assert_called_once_with(prov_id='99999', file=true_matcher)
-        self.cp_client.createOrgAdminRolePermission.assert_called_once_with(kt_org_name='baz')
+        self.cp_client.createOrgAdminRolePermission.assert_called_once_with(kt_org_label='satellite-3')
 
     def test_owner_delete(self):
         # owner #2 is missing and should get zapped 
@@ -134,18 +134,18 @@ class TestObjectSync(SpliceToolTest):
     def test_role_update(self):
         sw_userlist = [{'username': 'foo', 'user_id': '1', 'organization_id': '1',
                         'role': 'Organization Administrator;Satellite Administrator',
-                        'organization': 'foo org', 'email': 'foo@bar.com'},
+                        'organization': 'Awesome Org', 'email': 'foo@bar.com'},
                         {'username': 'barbar', 'user_id': '2', 'organization_id': '2',
-                        'role': 'Organization Administrator', 'organization': 'bar org',
+                        'role': 'Organization Administrator', 'organization': 'foo org',
                         'email': 'bar@foo.com'},
                         {'username': 'bazbaz', 'user_id': '3', 'organization_id': '1',
                         'role': '', 'organization': 'foo org', 'email': 'baz@foo.com'}]
         checkin.update_roles(self.cp_client, sw_userlist)
 
-        # user "foo" is an org admin on sat org 1 (bar org), and needs to get added to
+        # user "foo" is an org admin on sat org 1, and needs to get added to
         # satellite-1 in katello
         user_matcher = TestObjectSync.Matcher(self.user_compare, {'username': 'foo'})
-        expected = [call(kt_user=user_matcher, kt_org_name='foo org')]
+        expected = [call(kt_user=user_matcher, kt_org_label='satellite-1')]
         result = self.cp_client.grantOrgAdmin.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
 
@@ -155,7 +155,7 @@ class TestObjectSync(SpliceToolTest):
         # user "bazbaz" is not an org admin on sat org 1, and needs to get removed from
         # satellite-1 in katello
         user_matcher = TestObjectSync.Matcher(self.user_compare, {'username': 'bazbaz'})
-        expected = [call(kt_user=user_matcher, kt_org_name='foo org')]
+        expected = [call(kt_user=user_matcher, kt_org_label='satellite-1')]
         result = self.cp_client.ungrantOrgAdmin.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
 
