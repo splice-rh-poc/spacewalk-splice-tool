@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.19
+Version:        0.20
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -71,6 +71,12 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Tue Jun 11 2013 John Matthews <jwmatthews@gmail.com> 0.20-1
+- 972146 - use org ID in role name instead of org name (cduryee@redhat.com)
+- 972192 - Handle ssh commands that don't run successfully (jslagle@redhat.com)
+- fix typo in cron and shift time over a bit, until we have two lockfiles
+  (cduryee@redhat.com)
+
 * Wed Jun 05 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - remove katello-checkin file (cduryee@redhat.com)
 - data handling fixes (cduryee@redhat.com)
