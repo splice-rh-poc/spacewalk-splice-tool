@@ -572,10 +572,8 @@ def main(options):
 
     if options.spacewalk_sync:
         spacewalk_sync(options)
-    elif options.splice_sync:
-        splice_sync(options)
-    else:
-        spacewalk_sync(options)
+
+    if options.splice_sync:
         splice_sync(options)
 
     finish_time = time.time() - start_time
