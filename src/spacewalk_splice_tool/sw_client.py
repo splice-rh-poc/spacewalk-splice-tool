@@ -40,7 +40,7 @@ class SpacewalkClient(object):
         process = subprocess.Popen(
                     ['/usr/bin/ssh', '-i', self.ssh_key_path,
                      '-l', 'root',
-                     self.host, '/usr/bin/spacewalk-report', report_path], 
+                     self.host, report_path],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
