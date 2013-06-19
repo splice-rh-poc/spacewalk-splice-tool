@@ -246,7 +246,10 @@ def update_owners(katello_client, orgs):
     owners = katello_client.getOwners()
     # we need to iterate over a sorted list, to ensure org #1 is created before others
     org_ids = sorted(orgs.keys())
-    owner_labels = map(lambda x: x['label'], owners)
+    owner_label_map = {}
+    for owner in owners:
+        owner_label_map[owner['label']] = owner
+    owner_labels = owner_label_map.keys()
     _LOG.debug("owner label list from katello: %s" % owner_labels)
 
     for org_id in org_ids:
@@ -273,6 +276,16 @@ def update_owners(katello_client, orgs):
                 katello_client.importManifest(prov_id=provider['id'], file = manifest_file)
                 # explicit close to make sure the temp file gets deleted
                 manifest_file.close()
+        # Check that the org names are also equal, as the name can be modified
+        # in Satellite at any time.
+        elif orgs[org_id] != owner_label_map[katello_label]['name']:
+            katello_client.updateOwner(
+                owner_label_map[katello_label]['name'],
+                {'name':orgs[org_id]})
+            katello_client.updateDistributor(
+                'Distributor for %s' % owner_label_map[katello_label]['name'],
+                'satellite-1',
+                {'name':'Distributor for %s' % orgs[org_id]})
 
     # get the owner list again
     owners = katello_client.getOwners()

@@ -71,8 +71,14 @@ class KatelloConnection():
         return self.distributorapi.create(name=name, org=root_org, environment_id=None)
 
     def deleteDistributor(self, name, root_org):
-        dist_uuid = self.distributorapi.distributor_by_name(distName=name, orgName=root_org)['uuid']
+        dist_uuid = self.distributorapi.distributor_by_name(
+            distName=name, orgName=root_org)['uuid']
         return self.distributorapi.delete(distributor_uuid=dist_uuid)
+
+    def updateDistributor(self, name, root_org, params):
+        dist_uuid = self.distributorapi.distributor_by_name(
+            distName=name, orgName=root_org)['uuid']
+        return self.distributorapi.update(dist_uuid, params)
 
     def exportManifest(self, dist_uuid):
         return self.distributorapi.export_manifest(distributor_uuid = dist_uuid)
@@ -95,6 +101,9 @@ class KatelloConnection():
     def deleteOwner(self, name):
         # todo: error handling, not sure if orgapi will handle it
         self.orgapi.delete(name)
+
+    def updateOwner(self, name, params):
+        return self.orgapi.update(name, params)
 
     def getUsers(self):
         return self.userapi.users()
