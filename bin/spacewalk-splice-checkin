@@ -74,6 +74,16 @@ if __name__ == "__main__":
     elif opts.splice_sync:
         lockfile = '/tmp/.sst.splice-sync.lock'
 
+    if opts.sample_json:
+        if not os.access(opts.sample_json, os.F_OK):
+            _LOG.error("Directory %s for sample json does not exist." %
+                opts.sample_json)
+            sys.exit(1)
+        if not os.access(opts.sample_json, os.W_OK):
+            _LOG.error("Directory %s for sample json is not writeable." %
+                opts.sample_json)
+            sys.exit(1)
+
     lock_fd = open(lockfile, 'w')
     if not obtain_lockfile(lock_fd):
         _LOG.error("unable to obtain lockfile at %s" % lockfile)
