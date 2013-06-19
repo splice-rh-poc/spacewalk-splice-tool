@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.22
+Version:        0.23
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -71,6 +71,12 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Wed Jun 19 2013 James Slagle <jslagle@redhat.com> 0.23-1
+- 972953 - Name roles with the satellite org name instead of org id.  Handle
+  org renames as well (jslagle@redhat.com)
+- 972942 - Propogate org name changes from satellite to sam
+  (jslagle@redhat.com)
+
 * Wed Jun 19 2013 John Matthews <jwmatthews@gmail.com> 0.22-1
 - 972969 - No need to specify spacewalk-report command anymore
   (jslagle@redhat.com)
