@@ -1,2 +1,2 @@
 # Sync data from spacewalk to candlepin every 4 hours, 9 min past the hour
-9 */4 * * * root /usr/bin/spacewalk-splice-checkin --spacewalk-sync
+9 */4 * * * splice /usr/bin/spacewalk-splice-checkin --spacewalk-sync
