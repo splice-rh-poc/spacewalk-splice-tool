@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.24
+Version:        0.25
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -71,6 +71,10 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Fri Jun 21 2013 James Slagle <jslagle@redhat.com> 0.25-1
+- 972915 - Change sst to run as splice user in cron file (jslagle@redhat.com)
+- Remove unused config option (jslagle@redhat.com)
+
 * Wed Jun 19 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - change URL from headpin to sam (cduryee@redhat.com)
 
