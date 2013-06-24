@@ -84,7 +84,8 @@ class TestObjectSync(SpliceToolTest):
         # TODO: actually check the file contents
         true_matcher = TestObjectSync.Matcher(self.true_compare, "x")
         self.cp_client.importManifest.assert_called_once_with(prov_id='99999', file=true_matcher)
-        self.cp_client.createOrgAdminRolePermission.assert_called_once_with(kt_org_label='satellite-3')
+        # TODO: this says label but it's really "name"
+        self.cp_client.createOrgAdminRolePermission.assert_called_once_with(kt_org_label='baz')
 
     def test_owner_delete(self):
         # owner #2 is missing and should get zapped 
@@ -145,7 +146,8 @@ class TestObjectSync(SpliceToolTest):
         # user "foo" is an org admin on sat org 1, and needs to get added to
         # satellite-1 in katello
         user_matcher = TestObjectSync.Matcher(self.user_compare, {'username': 'foo'})
-        expected = [call(kt_user=user_matcher, kt_org_label='satellite-1')]
+        # TODO: this is an org name, not an org label
+        expected = [call(kt_user=user_matcher, kt_org_label='Awesome Org')]
         result = self.cp_client.grantOrgAdmin.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
 
@@ -155,7 +157,8 @@ class TestObjectSync(SpliceToolTest):
         # user "bazbaz" is not an org admin on sat org 1, and needs to get removed from
         # satellite-1 in katello
         user_matcher = TestObjectSync.Matcher(self.user_compare, {'username': 'bazbaz'})
-        expected = [call(kt_user=user_matcher, kt_org_label='satellite-1')]
+        # TODO: this is an org name, not an org label
+        expected = [call(kt_user=user_matcher, kt_org_label='foo org')]
         result = self.cp_client.ungrantOrgAdmin.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
 

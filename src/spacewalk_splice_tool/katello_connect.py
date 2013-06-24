@@ -223,6 +223,7 @@ class KatelloConnection():
         role = self.rolesapi.role_by_name(name=name)
         return self.rolesapi.update(role['id'], new_name, role['description'])
 
+    # TODO: this is using kt_org_label but is really kt_org_name
     def createOrgAdminRolePermission(self, kt_org_label):
         role = self.rolesapi.create(name="Org Admin Role for %s" % kt_org_label, description="generated from spacewalk")
         perm = self.permissionapi.create(roleId = role['id'], name = "Org Admin Permission for %s" % kt_org_label,
