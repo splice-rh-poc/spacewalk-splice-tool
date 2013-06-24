@@ -36,7 +36,8 @@ class CheckinTest(SpliceToolTest):
             mocked_splice_sync.reset_mock()
             options.configure_mock(spacewalk_sync=False, splice_sync=False)
 
-        options.spacwalk_sync = True
+        reset()
+        options.spacewalk_sync = True
         checkin.main(options)
         self.assertTrue(mocked_sw_sync.called)
         self.assertFalse(mocked_splice_sync.called)
@@ -48,6 +49,8 @@ class CheckinTest(SpliceToolTest):
         self.assertTrue(mocked_splice_sync.called)
         reset()
 
+        options.splice_sync = True
+        options.spacewalk_sync = True
         checkin.main(options)
         self.assertTrue(mocked_sw_sync.called)
         self.assertTrue(mocked_splice_sync.called)
