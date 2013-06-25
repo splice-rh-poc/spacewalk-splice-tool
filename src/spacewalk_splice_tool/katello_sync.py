@@ -22,6 +22,8 @@ import socket
 import sys
 import tempfile
 import time
+from Queue import Queue
+from threading import Thread
 
 from certutils import certutils
 from dateutil.tz import tzutc
@@ -42,6 +44,8 @@ from subscription_manager.certdirectory import CertificateDirectory
 _LOG = logging.getLogger(__name__)
 
 SAT_OWNER_PREFIX = 'satellite-'
+
+NUM_THREADS=4
 
 class KatelloPushSync:
     """
@@ -240,32 +244,52 @@ class KatelloPushSync:
             _LOG.debug("detected guest IDs %s for host %s" % (guest_consumer_ids, host_consumer_id_name))
 
             self.katello_client.updateConsumer(name = host_consumer_id_name[1], cp_uuid=host_consumer_id_name[0], guest_uuids=guest_consumer_ids)
-            
+
+
+    def _upload_consumer_to_katello(self, consumer):            
+        kt_consumer = self.katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id'])
+        if kt_consumer:
+            # use the existing kt/cp uuid when updating
+            self.katello_client.updateConsumer(cp_uuid=kt_consumer['uuid'],
+                                          name = consumer['name'],
+                                          facts=consumer['facts'],
+                                          installed_products=consumer['installed_products'],
+                                          owner=consumer['owner'],
+                                          last_checkin=consumer['last_checkin'])
+            _LOG.debug("updated consumer %s" % kt_consumer['uuid'])
+        else:
+            uuid = self.katello_client.createConsumer(name=consumer['name'],
+                                                sw_uuid=consumer['id'],
+                                                facts=consumer['facts'],
+                                                installed_products=consumer['installed_products'],
+                                                last_checkin=consumer['last_checkin'],
+                                                owner=consumer['owner'])
+            _LOG.debug("created consumer %s" % uuid)
+
     def upload_to_katello(self, consumers):
         """
         Uploads consumer data to katello
         """
+        def worker():
+            while True:
+                size = q.qsize()
+                if (size % 10) == 0 and size != 0:
+                    _LOG.info("%s consumers left to process" % size)
+                consumer = q.get()
+                self._upload_consumer_to_katello(consumer)
+                q.task_done()
 
-        done = 0
-        for consumer in consumers:
-            if (done % 10) == 0:
-                _LOG.info("%s consumers uploaded so far." % done)
-            kt_consumer = self.katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id'])
-            if kt_consumer:
-                # use the existing kt/cp uuid when updating
-                self.katello_client.updateConsumer(cp_uuid=kt_consumer['uuid'],
-                                              name = consumer['name'],
-                                              facts=consumer['facts'],
-                                              installed_products=consumer['installed_products'],
-                                              owner=consumer['owner'],
-                                              last_checkin=consumer['last_checkin'])
-                _LOG.debug("updated consumer %s" % kt_consumer['uuid'])
-            else:
-                uuid = self.katello_client.createConsumer(name=consumer['name'],
-                                                    sw_uuid=consumer['id'],
-                                                    facts=consumer['facts'],
-                                                    installed_products=consumer['installed_products'],
-                                                    last_checkin=consumer['last_checkin'],
-                                                    owner=consumer['owner'])
-                _LOG.debug("created consumer %s" % uuid)
-            done += 1
+        _LOG.debug("starting queue")
+        q = Queue()
+        for i in range(NUM_THREADS):
+            _LOG.debug("initializing worker #%i" % i)
+            t = Thread(target=worker)
+            t.daemon = True
+            t.start()
+
+        for c in consumers:
+            q.put(c)
+        _LOG.debug("starting workers")
+        q.join()
+        _LOG.debug("queue work is complete")
+
