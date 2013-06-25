@@ -80,8 +80,8 @@ class CheckinTest(SpliceToolTest):
         mocked_cp_client.getConsumers.return_value = consumer_list
         
         options = Mock()
-        delete_stale_consumers = self.mock(checkin, 'delete_stale_consumers')
-        upload_to_cp = self.mock(checkin, 'upload_to_katello')
+        delete_stale_consumers = self.mock(checkin.KatelloPushSync, 'delete_stale_consumers')
+        upload_to_cp = self.mock(checkin.KatelloPushSync, 'upload_to_katello')
 
         checkin.spacewalk_sync(options)
 

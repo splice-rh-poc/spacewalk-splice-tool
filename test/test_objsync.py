@@ -13,7 +13,7 @@
 
 from mock import Mock, call
 
-from spacewalk_splice_tool import checkin
+from spacewalk_splice_tool.checkin import KatelloPushSync
 
 from base import SpliceToolTest
 
@@ -36,6 +36,7 @@ class TestObjectSync(SpliceToolTest):
 
     def setUp(self):
         super(TestObjectSync, self).setUp()
+        self.kps = KatelloPushSync()
 
         cp_orgs = [
                    {'name': 'bar org', 'label': 'satellite-2',   'id': '9',   'description': 'no description'},
@@ -77,7 +78,7 @@ class TestObjectSync(SpliceToolTest):
 
     def test_owner_add(self):
         sw_orgs = {'1': 'foo', '2': 'bar', '3': 'baz'}
-        checkin.update_owners(self.cp_client, sw_orgs)
+        self.kps.update_owners(self.cp_client, sw_orgs)
         self.cp_client.createOwner.assert_called_once_with(name='baz', label='satellite-3')
         self.cp_client.createDistributor.assert_called_once_with(name="Distributor for baz", root_org='satellite-1')
         self.cp_client.exportManifest.assert_called_once_with(dist_uuid='100100')
@@ -90,12 +91,12 @@ class TestObjectSync(SpliceToolTest):
     def test_owner_delete(self):
         # owner #2 is missing and should get zapped 
         sw_orgs = {'1': 'foo', '3': 'baz'}
-        checkin.update_owners(self.cp_client, sw_orgs)
+        self.kps.update_owners(self.cp_client, sw_orgs)
         self.cp_client.deleteOwner.assert_called_once_with(name='bar org')
 
     def test_owner_noop(self):
         sw_orgs = {'1': 'foo', '2': 'bar'}
-        checkin.update_owners(self.cp_client, sw_orgs)
+        self.kps.update_owners(self.cp_client, sw_orgs)
         assert not self.cp_client.deleteOwner.called
         assert not self.cp_client.createOwner.called
 
@@ -114,7 +115,7 @@ class TestObjectSync(SpliceToolTest):
                             { 'name': '102', 'uuid': '1-1-4', 'owner': {'key': 'NOT-A-SAT-ORG'}, 'facts': {'systemid': '103'}},
                             { 'name': '107', 'uuid': '1-1-5', 'owner': {'key': 'satellite-1'}, 'facts': {'systemid': '107'}}
                          ]
-        checkin.delete_stale_consumers(self.cp_client, kt_consumer_list, sw_system_list)
+        self.kps.delete_stale_consumers(self.cp_client, kt_consumer_list, sw_system_list)
         expected = [call('1-1-3'), call('1-1-5')]
         result = self.cp_client.deleteConsumer.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
@@ -127,7 +128,7 @@ class TestObjectSync(SpliceToolTest):
                         'organization_id': '2', 'role': 'Organization Administrator', 'organization': 'foo org',
                         'email': 'bar@foo.com'}]
 
-        checkin.update_users(self.cp_client, sw_userlist)
+        self.kps.update_users(self.cp_client, sw_userlist)
         expected = [call(username='barbar', email='bar@foo.com')]
         result = self.cp_client.createUser.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
@@ -141,7 +142,7 @@ class TestObjectSync(SpliceToolTest):
                         'email': 'bar@foo.com'},
                         {'username': 'bazbaz', 'user_id': '3', 'organization_id': '1',
                         'role': '', 'organization': 'foo org', 'email': 'baz@foo.com'}]
-        checkin.update_roles(self.cp_client, sw_userlist)
+        self.kps.update_roles(self.cp_client, sw_userlist)
 
         # user "foo" is an org admin on sat org 1, and needs to get added to
         # satellite-1 in katello

@@ -238,224 +238,225 @@ def upload_to_rcs(mpu_data, sample_json=None):
         _LOG.error("Error uploading MarketingProductUsage Data; Error: %s" % e)
         utils.system_exit(os.EX_DATAERR, "Error uploading; Error: %s" % e)
 
-def update_owners(katello_client, orgs):
-    """
-    ensure that the katello owner set matches what's in spacewalk
-    """
+class KatelloPushSync:
+    def update_owners(self, katello_client, orgs):
+        """
+        ensure that the katello owner set matches what's in spacewalk
+        """
 
-    owners = katello_client.getOwners()
-    # we need to iterate over a sorted list, to ensure org #1 is created before others
-    org_ids = sorted(orgs.keys())
-    owner_label_map = {}
-    for owner in owners:
-        owner_label_map[owner['label']] = owner
-    owner_labels = owner_label_map.keys()
-    _LOG.debug("owner label list from katello: %s" % owner_labels)
+        owners = katello_client.getOwners()
+        # we need to iterate over a sorted list, to ensure org #1 is created before others
+        org_ids = sorted(orgs.keys())
+        owner_label_map = {}
+        for owner in owners:
+            owner_label_map[owner['label']] = owner
+        owner_labels = owner_label_map.keys()
+        _LOG.debug("owner label list from katello: %s" % owner_labels)
 
-    for org_id in org_ids:
-        katello_label = SAT_OWNER_PREFIX + org_id
-        if katello_label not in owner_labels:
-            _LOG.info("creating owner %s (%s), owner is in spacewalk but not katello" % (katello_label, orgs[org_id]))
-            katello_client.createOwner(label=katello_label, name=orgs[org_id])
-            katello_client.createOrgAdminRolePermission(kt_org_label=orgs[org_id])
-            # if we are not the first org, create a distributor for us in the first org
-            if org_id is not "1":
-                _LOG.info("creating distributor for %s (org id: %s)" % (orgs[org_id], org_id)) 
-                distributor = katello_client.createDistributor(name="Distributor for %s" % orgs[org_id], root_org='satellite-1')
-                manifest_data = katello_client.exportManifest(dist_uuid = distributor['uuid'])
-                # katello-cli does some magic that requires an actual file here
-                manifest_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
-                manifest_filename = manifest_file.name
-                _LOG.info("manifest temp file is %s" % manifest_filename)
-                manifest_file.write(manifest_data)
-                manifest_file.close()
-                manifest_file = open(manifest_filename, 'r')
-        
-                # this uses the org name, not label
-                provider = katello_client.getRedhatProvider(org=orgs[org_id])
-                katello_client.importManifest(prov_id=provider['id'], file = manifest_file)
-                # explicit close to make sure the temp file gets deleted
-                manifest_file.close()
-        # Check that the org names are also equal, as the name can be modified
-        # in Satellite at any time.
-        elif orgs[org_id] != owner_label_map[katello_label]['name']:
-            katello_client.updateOwner(
-                owner_label_map[katello_label]['name'],
-                {'name':orgs[org_id]})
-            katello_client.updateDistributor(
-                'Distributor for %s' % owner_label_map[katello_label]['name'],
-                'satellite-1',
-                {'name':'Distributor for %s' % orgs[org_id]})
-            katello_client.updateRole(
-                'Org Admin Role for %s' %
-                    owner_label_map[katello_label]['name'],
-                'Org Admin Role for %s' % orgs[org_id])
-
-    # get the owner list again
-    owners = katello_client.getOwners()
-    # build up a label->name mapping this time
-    owner_labels_names = {}
-    for owner in owners:
-        owner_labels_names[owner['label']] = owner['name']
-
-    # perform deletions
-    for owner_label in owner_labels_names.keys():
-        # bail out if this isn't an owner we are managing
-        if not owner_label.startswith(SAT_OWNER_PREFIX):
-            continue
-        
-        # get the org ID from the katello name
-        kt_org_id = owner_label[len(SAT_OWNER_PREFIX):]
-        if kt_org_id not in org_ids:
-            _LOG.info("removing owner %s (name: %s) and associated distributor, owner is no longer in spacewalk"
-                                %  (owner_label, owner_labels_names[owner_label]))
-            katello_client.deleteDistributor(name="Distributor for %s" % owner_labels_names[owner_label], root_org='satellite-1')
-            katello_client.deleteOwner(name=owner_labels_names[owner_label])
+        for org_id in org_ids:
+            katello_label = SAT_OWNER_PREFIX + org_id
+            if katello_label not in owner_labels:
+                _LOG.info("creating owner %s (%s), owner is in spacewalk but not katello" % (katello_label, orgs[org_id]))
+                katello_client.createOwner(label=katello_label, name=orgs[org_id])
+                katello_client.createOrgAdminRolePermission(kt_org_label=orgs[org_id])
+                # if we are not the first org, create a distributor for us in the first org
+                if org_id is not "1":
+                    _LOG.info("creating distributor for %s (org id: %s)" % (orgs[org_id], org_id)) 
+                    distributor = katello_client.createDistributor(name="Distributor for %s" % orgs[org_id], root_org='satellite-1')
+                    manifest_data = katello_client.exportManifest(dist_uuid = distributor['uuid'])
+                    # katello-cli does some magic that requires an actual file here
+                    manifest_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
+                    manifest_filename = manifest_file.name
+                    _LOG.info("manifest temp file is %s" % manifest_filename)
+                    manifest_file.write(manifest_data)
+                    manifest_file.close()
+                    manifest_file = open(manifest_filename, 'r')
             
+                    # this uses the org name, not label
+                    provider = katello_client.getRedhatProvider(org=orgs[org_id])
+                    katello_client.importManifest(prov_id=provider['id'], file = manifest_file)
+                    # explicit close to make sure the temp file gets deleted
+                    manifest_file.close()
+            # Check that the org names are also equal, as the name can be modified
+            # in Satellite at any time.
+            elif orgs[org_id] != owner_label_map[katello_label]['name']:
+                katello_client.updateOwner(
+                    owner_label_map[katello_label]['name'],
+                    {'name':orgs[org_id]})
+                katello_client.updateDistributor(
+                    'Distributor for %s' % owner_label_map[katello_label]['name'],
+                    'satellite-1',
+                    {'name':'Distributor for %s' % orgs[org_id]})
+                katello_client.updateRole(
+                    'Org Admin Role for %s' %
+                        owner_label_map[katello_label]['name'],
+                    'Org Admin Role for %s' % orgs[org_id])
 
-def update_users(katello_client, sw_userlist):
-    """
-    ensure that the katello user set matches what's in spacewalk
-    """
+        # get the owner list again
+        owners = katello_client.getOwners()
+        # build up a label->name mapping this time
+        owner_labels_names = {}
+        for owner in owners:
+            owner_labels_names[owner['label']] = owner['name']
 
-    sw_users = {}
-    for sw_user in sw_userlist:
-        sw_users[sw_user['username']] = sw_user
-    kt_users = {}
-    for kt_user in katello_client.getUsers():
-        kt_users[kt_user['username']] = kt_user
-
-    for sw_username in sw_users.keys():
-        if sw_username not in kt_users.keys():
-            _LOG.info("adding new user %s to katello" % sw_username)
-            created_kt_user = katello_client.createUser(username=sw_username, email=sw_users[sw_username]['email']) 
-
-def update_roles(katello_client, sw_userlist):
-    sw_users = {}
-    for sw_user in sw_userlist:
-        sw_users[sw_user['username']] = sw_user
-    kt_users = {}
-    for kt_user in katello_client.getUsers():
-        kt_users[kt_user['username']] = kt_user
-
-    for kt_username in kt_users.keys():
-        # if the user isn't also in SW, bail out
-        # NB: we assume kt_users is always be a superset of sw_users
-        if kt_username not in sw_users.keys():
-            _LOG.info("skipping role sync for %s, user is not in spacewalk" % kt_username)
-            continue
-
-        # get a flat list of role names, for comparison with sw
-        kt_roles = map(lambda x: x['name'], katello_client.getRoles(user_id = kt_users[kt_username]['id']))
-        sw_roles = sw_users[kt_username]['role'].split(';')
-        sw_user_org = sw_users[kt_username]['organization']
-
-
-        # add any new roles
-        for sw_role in sw_roles:
-            _LOG.debug("examining sw role %s for org %s against kt role set %s" % (sw_role, sw_user_org,  kt_roles))
-            if sw_role == 'Organization Administrator' and \
-                "Org Admin Role for %s" % sw_user_org not in kt_roles:
-                    _LOG.info("adding %s to %s org admin role in katello" % (kt_username, sw_user_org))
-                    katello_client.grantOrgAdmin(
-                        kt_user=kt_users[kt_username], kt_org_label=sw_user_org)
-            elif sw_role == 'Satellite Administrator' and 'Administrator' not in kt_roles:
-                    _LOG.info("adding %s to full admin role in katello" % kt_username)
-                    katello_client.grantFullAdmin(kt_user=kt_users[kt_username])
-
-        # delete any roles in kt but not sw
-        for kt_role in kt_roles:
-            # TODO: handle sat admin
-            _LOG.debug("examining kt role %s against sw role set %s for org %s" % (kt_role, sw_roles, sw_user_org))
-            if kt_role == "Org Admin Role for satellite-%s" % sw_users[kt_username]['organization_id'] and \
-                "Organization Administrator" not in sw_roles:
-                _LOG.info("removing %s from %s org admin role in katello" % (kt_username, "satellite-%s" % sw_user_org))
-                katello_client.ungrantOrgAdmin(kt_user=kt_users[kt_username],
-                                               kt_org_label=sw_user_org)
-            elif kt_role == 'Administrator' and 'Satellite Administrator' not in sw_roles:
-                    _LOG.info("removing %s from full admin role in katello" % kt_username)
-                    katello_client.ungrantFullAdmin(kt_user=kt_users[kt_username])
+        # perform deletions
+        for owner_label in owner_labels_names.keys():
+            # bail out if this isn't an owner we are managing
+            if not owner_label.startswith(SAT_OWNER_PREFIX):
+                continue
+            
+            # get the org ID from the katello name
+            kt_org_id = owner_label[len(SAT_OWNER_PREFIX):]
+            if kt_org_id not in org_ids:
+                _LOG.info("removing owner %s (name: %s) and associated distributor, owner is no longer in spacewalk"
+                                    %  (owner_label, owner_labels_names[owner_label]))
+                katello_client.deleteDistributor(name="Distributor for %s" % owner_labels_names[owner_label], root_org='satellite-1')
+                katello_client.deleteOwner(name=owner_labels_names[owner_label])
                 
 
-def delete_stale_consumers(katello_client, consumer_list, system_list):
-    """
-    removes consumers that are in katello and not spacewalk. This is to clean
-    up any systems that were deleted in spacewalk.
-    """
+    def update_users(self, katello_client, sw_userlist):
+        """
+        ensure that the katello user set matches what's in spacewalk
+        """
 
-    system_id_list = map(lambda x: x['server_id'], system_list)
+        sw_users = {}
+        for sw_user in sw_userlist:
+            sw_users[sw_user['username']] = sw_user
+        kt_users = {}
+        for kt_user in katello_client.getUsers():
+            kt_users[kt_user['username']] = kt_user
 
-    _LOG.debug("system id list from sw: %s" % system_id_list)
-    consumers_to_delete = []
+        for sw_username in sw_users.keys():
+            if sw_username not in kt_users.keys():
+                _LOG.info("adding new user %s to katello" % sw_username)
+                created_kt_user = katello_client.createUser(username=sw_username, email=sw_users[sw_username]['email']) 
 
-    for consumer in consumer_list:
-        if not consumer['facts'].has_key('systemid') or consumer['facts']['systemid'] is None:
-                _LOG.debug("consumer %s has no systemid, skipping" % consumer['name'])
+    def update_roles(self, katello_client, sw_userlist):
+        sw_users = {}
+        for sw_user in sw_userlist:
+            sw_users[sw_user['username']] = sw_user
+        kt_users = {}
+        for kt_user in katello_client.getUsers():
+            kt_users[kt_user['username']] = kt_user
+
+        for kt_username in kt_users.keys():
+            # if the user isn't also in SW, bail out
+            # NB: we assume kt_users is always be a superset of sw_users
+            if kt_username not in sw_users.keys():
+                _LOG.info("skipping role sync for %s, user is not in spacewalk" % kt_username)
                 continue
-        # don't delete consumers that are not in orgs we manage!
-        if not consumer['owner']['key'].startswith(SAT_OWNER_PREFIX):
-            _LOG.debug("consumer %s is not in a satellite-managed owner, skipping" % consumer['name'])
-            continue
-        if consumer['facts']['systemid'] not in system_id_list:
-            _LOG.debug("adding consumer %s to deletion list" % consumer['name'])
-            consumers_to_delete.append(consumer)
 
-    _LOG.info("removing %s consumers that are no longer in spacewalk" % len(consumers_to_delete))
-    for consumer in consumers_to_delete:
-        _LOG.info("removed consumer %s" % consumer['name'])
-        katello_client.deleteConsumer(consumer['uuid'])
+            # get a flat list of role names, for comparison with sw
+            kt_roles = map(lambda x: x['name'], katello_client.getRoles(user_id = kt_users[kt_username]['id']))
+            sw_roles = sw_users[kt_username]['role'].split(';')
+            sw_user_org = sw_users[kt_username]['organization']
 
-def upload_host_guest_mapping(host_guests, katello_consumer_list, katello_client):
-    """
-    updates katello consumers that have guests. This has to happen after an
-    initial update, so we have UUIDs for all systems
-    """
-    sysid_consumer_map = {}
-    for consumer in katello_consumer_list:
-      sysid = katello_client.getSpacewalkID(consumer['id'])
-      # katello requires both uuid and name
-      sysid_consumer_map[sysid] = (consumer['uuid'], consumer['name'])
 
-    for host_guest in host_guests:
-        host_consumer_id_name = sysid_consumer_map[host_guest['server_id']]
+            # add any new roles
+            for sw_role in sw_roles:
+                _LOG.debug("examining sw role %s for org %s against kt role set %s" % (sw_role, sw_user_org,  kt_roles))
+                if sw_role == 'Organization Administrator' and \
+                    "Org Admin Role for %s" % sw_user_org not in kt_roles:
+                        _LOG.info("adding %s to %s org admin role in katello" % (kt_username, sw_user_org))
+                        katello_client.grantOrgAdmin(
+                            kt_user=kt_users[kt_username], kt_org_label=sw_user_org)
+                elif sw_role == 'Satellite Administrator' and 'Administrator' not in kt_roles:
+                        _LOG.info("adding %s to full admin role in katello" % kt_username)
+                        katello_client.grantFullAdmin(kt_user=kt_users[kt_username])
 
-        guest_consumer_ids = []
-        for sw_guest in host_guest['guests'].split(';'):
-            # we only want the first piece of the tuple here
-            guest_consumer_ids.append(sysid_consumer_map[sw_guest][0])
+            # delete any roles in kt but not sw
+            for kt_role in kt_roles:
+                # TODO: handle sat admin
+                _LOG.debug("examining kt role %s against sw role set %s for org %s" % (kt_role, sw_roles, sw_user_org))
+                if kt_role == "Org Admin Role for satellite-%s" % sw_users[kt_username]['organization_id'] and \
+                    "Organization Administrator" not in sw_roles:
+                    _LOG.info("removing %s from %s org admin role in katello" % (kt_username, "satellite-%s" % sw_user_org))
+                    katello_client.ungrantOrgAdmin(kt_user=kt_users[kt_username],
+                                                   kt_org_label=sw_user_org)
+                elif kt_role == 'Administrator' and 'Satellite Administrator' not in sw_roles:
+                        _LOG.info("removing %s from full admin role in katello" % kt_username)
+                        katello_client.ungrantFullAdmin(kt_user=kt_users[kt_username])
+                    
 
-        _LOG.debug("detected guest IDs %s for host %s" % (guest_consumer_ids, host_consumer_id_name))
+    def delete_stale_consumers(self, katello_client, consumer_list, system_list):
+        """
+        removes consumers that are in katello and not spacewalk. This is to clean
+        up any systems that were deleted in spacewalk.
+        """
 
-        katello_client.updateConsumer(name = host_consumer_id_name[1], cp_uuid=host_consumer_id_name[0], guest_uuids=guest_consumer_ids)
-        
-def upload_to_katello(consumers, katello_client):
-    """
-    Uploads consumer data to katello
-    """
+        system_id_list = map(lambda x: x['server_id'], system_list)
 
-    done = 0
-    for consumer in consumers:
-        if (done % 10) == 0:
-            _LOG.info("%s consumers uploaded so far." % done)
-        kt_consumer = katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id'])
-        if kt_consumer:
-            # use the existing kt/cp uuid when updating
-            katello_client.updateConsumer(cp_uuid=kt_consumer['uuid'],
-                                          name = consumer['name'],
-                                          facts=consumer['facts'],
-                                          installed_products=consumer['installed_products'],
-                                          owner=consumer['owner'],
-                                          last_checkin=consumer['last_checkin'])
-            _LOG.debug("updated consumer %s" % kt_consumer['uuid'])
-        else:
-            uuid = katello_client.createConsumer(name=consumer['name'],
-                                                sw_uuid=consumer['id'],
-                                                facts=consumer['facts'],
-                                                installed_products=consumer['installed_products'],
-                                                last_checkin=consumer['last_checkin'],
-                                                owner=consumer['owner'])
-            _LOG.debug("created consumer %s" % uuid)
-        done += 1
+        _LOG.debug("system id list from sw: %s" % system_id_list)
+        consumers_to_delete = []
+
+        for consumer in consumer_list:
+            if not consumer['facts'].has_key('systemid') or consumer['facts']['systemid'] is None:
+                    _LOG.debug("consumer %s has no systemid, skipping" % consumer['name'])
+                    continue
+            # don't delete consumers that are not in orgs we manage!
+            if not consumer['owner']['key'].startswith(SAT_OWNER_PREFIX):
+                _LOG.debug("consumer %s is not in a satellite-managed owner, skipping" % consumer['name'])
+                continue
+            if consumer['facts']['systemid'] not in system_id_list:
+                _LOG.debug("adding consumer %s to deletion list" % consumer['name'])
+                consumers_to_delete.append(consumer)
+
+        _LOG.info("removing %s consumers that are no longer in spacewalk" % len(consumers_to_delete))
+        for consumer in consumers_to_delete:
+            _LOG.info("removed consumer %s" % consumer['name'])
+            katello_client.deleteConsumer(consumer['uuid'])
+
+    def upload_host_guest_mapping(self, host_guests, katello_consumer_list, katello_client):
+        """
+        updates katello consumers that have guests. This has to happen after an
+        initial update, so we have UUIDs for all systems
+        """
+        sysid_consumer_map = {}
+        for consumer in katello_consumer_list:
+          sysid = katello_client.getSpacewalkID(consumer['id'])
+          # katello requires both uuid and name
+          sysid_consumer_map[sysid] = (consumer['uuid'], consumer['name'])
+
+        for host_guest in host_guests:
+            host_consumer_id_name = sysid_consumer_map[host_guest['server_id']]
+
+            guest_consumer_ids = []
+            for sw_guest in host_guest['guests'].split(';'):
+                # we only want the first piece of the tuple here
+                guest_consumer_ids.append(sysid_consumer_map[sw_guest][0])
+
+            _LOG.debug("detected guest IDs %s for host %s" % (guest_consumer_ids, host_consumer_id_name))
+
+            katello_client.updateConsumer(name = host_consumer_id_name[1], cp_uuid=host_consumer_id_name[0], guest_uuids=guest_consumer_ids)
+            
+    def upload_to_katello(self, consumers, katello_client):
+        """
+        Uploads consumer data to katello
+        """
+
+        done = 0
+        for consumer in consumers:
+            if (done % 10) == 0:
+                _LOG.info("%s consumers uploaded so far." % done)
+            kt_consumer = katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id'])
+            if kt_consumer:
+                # use the existing kt/cp uuid when updating
+                katello_client.updateConsumer(cp_uuid=kt_consumer['uuid'],
+                                              name = consumer['name'],
+                                              facts=consumer['facts'],
+                                              installed_products=consumer['installed_products'],
+                                              owner=consumer['owner'],
+                                              last_checkin=consumer['last_checkin'])
+                _LOG.debug("updated consumer %s" % kt_consumer['uuid'])
+            else:
+                uuid = katello_client.createConsumer(name=consumer['name'],
+                                                    sw_uuid=consumer['id'],
+                                                    facts=consumer['facts'],
+                                                    installed_products=consumer['installed_products'],
+                                                    last_checkin=consumer['last_checkin'],
+                                                    owner=consumer['owner'])
+                _LOG.debug("created consumer %s" % uuid)
+            done += 1
 
 def get_checkin_config():
     return {
@@ -513,6 +514,7 @@ def spacewalk_sync(options):
     client = SpacewalkClient(CONFIG.get('spacewalk', 'host'),
                              CONFIG.get('spacewalk', 'ssh_key_path'))
     katello_client = KatelloConnection()
+    kps = KatelloPushSync()
     consumers = []
 
     _LOG.info("retrieving data from spacewalk")
@@ -523,12 +525,12 @@ def spacewalk_sync(options):
     update_system_channel(system_details, channel_details)
     org_list = client.get_org_list()
 
-    update_owners(katello_client, org_list)
-    update_users(katello_client, sw_user_list)
-    update_roles(katello_client, sw_user_list)
+    kps.update_owners(katello_client, org_list)
+    kps.update_users(katello_client, sw_user_list)
+    kps.update_roles(katello_client, sw_user_list)
 
     katello_consumer_list = katello_client.getConsumers()
-    delete_stale_consumers(katello_client, katello_consumer_list, system_details)
+    kps.delete_stale_consumers(katello_client, katello_consumer_list, system_details)
 
     _LOG.info("adding installed products to %s spacewalk records" % len(system_details))
     # enrich with engineering product IDs
@@ -542,11 +544,11 @@ def spacewalk_sync(options):
     consumers.extend(transform_to_consumers(system_details))
     _LOG.info("found %s systems to upload into katello" % len(consumers))
     _LOG.info("uploading to katello...")
-    upload_to_katello(consumers, katello_client)
+    kps.upload_to_katello(consumers, katello_client)
     _LOG.info("upload completed. updating with guest info..")
     # refresh the consumer list. we need the full details here to get at the system ID
     katello_consumer_list = katello_client.getConsumers(with_details=False)
-    upload_host_guest_mapping(hosts_guests, katello_consumer_list, katello_client)
+    kps.upload_host_guest_mapping(hosts_guests, katello_consumer_list, katello_client)
     _LOG.info("guest upload completed")
 
 
