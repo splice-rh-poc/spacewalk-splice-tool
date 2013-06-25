@@ -40,7 +40,6 @@ if _LIBPATH not in sys.path:
 from subscription_manager.certdirectory import CertificateDirectory
 
 _LOG = logging.getLogger(__name__)
-CONFIG = None
 
 SAT_OWNER_PREFIX = 'satellite-'
 

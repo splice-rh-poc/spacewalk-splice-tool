@@ -28,7 +28,7 @@ from dateutil.tz import tzutc
 from splice.common.connect import BaseConnection
 import splice.common.utils
 
-from spacewalk_splice_tool import facts, connect, utils, constants, transforms, katello_sync
+from spacewalk_splice_tool import facts, connect, utils, constants, transforms, katello_sync, splice_push
 from spacewalk_splice_tool.sw_client import SpacewalkClient
 from spacewalk_splice_tool.katello_connect import KatelloConnection, NotFoundException
 
@@ -77,37 +77,6 @@ def get_product_ids(subscribedchannels):
     return installed_products
 
 
-def get_splice_serv_id():
-    """
-    return the splice server UUID to be used
-    """
-    cutils = certutils.CertUtils()
-    return cutils.get_subject_pieces(open(CONFIG.get("splice", "splice_id_cert")).read(), ['CN'])['CN']
-
-def _get_splice_server_uuid():
-    """
-    obtains the UUID that sst is emulating
-    """
-    cfg = get_checkin_config()
-    cutils = certutils.CertUtils()
-    return cutils.get_subject_pieces(open(cfg["cert"]).read(), ['CN'])['CN']
-
-
-def build_server_metadata(cfg):
-    """
-    Build splice server metadata obj
-    """
-    _LOG.info("building server metadata")
-    server_metadata = {}
-    server_metadata['description'] = cfg["splice_server_description"]
-    server_metadata['environment'] = cfg["splice_server_environment"]
-    server_metadata['hostname'] = cfg["splice_server_hostname"]
-    server_metadata['uuid'] = _get_splice_server_uuid()
-    server_metadata['created'] = datetime.now(tzutc()).isoformat()
-    server_metadata['updated'] = server_metadata['created']
-    # wrap obj for consumption by upstream rcs
-    return {"objects": [server_metadata]}
-
 def get_katello_consumers():
     katello_conn = KatelloConnection()
     return katello_conn.getConsumers()
@@ -115,79 +84,6 @@ def get_katello_consumers():
 def get_katello_entitlements(uuid):
     katello_conn = KatelloConnection()
     return katello_conn.getEntitlements(uuid)
-
-def write_sample_json(sample_json, mpu_data, splice_server_data):
-    def write_file(file_name, data):
-        if not data:
-            return
-        if not os.path.exists(sample_json):
-            _LOG.info("Directory doesn't exist: %s" % (sample_json))
-            return
-        target_path = os.path.join(sample_json, file_name)
-        try:
-            _LOG.info("Will write json data to: %s" % (target_path))
-            f = open(target_path, "w")
-            try:
-                f.write(splice.common.utils.obj_to_json(data, indent = 4))
-            finally:
-                f.close()
-        except Exception, e:
-            _LOG.exception("Unable to write sample json for: %s" % (target_path))
-    write_file("sst_mpu.json", mpu_data)
-    write_file("sst_splice_server.json", splice_server_data)
-
-def upload_to_rcs(mpu_data, sample_json=None):
-    cfg = get_checkin_config()
-    try:
-        splice_conn = BaseConnection(cfg["host"], cfg["port"], cfg["handler"],
-            cert_file=cfg["cert"], key_file=cfg["key"], ca_cert=cfg["ca"])
-
-        splice_server_data = build_server_metadata(cfg)
-        if sample_json:
-            write_sample_json(sample_json=sample_json, mpu_data=mpu_data,
-                            splice_server_data=splice_server_data)
-        # upload the server metadata to rcs
-        _LOG.info("sending metadata to server")
-        url = "/v1/spliceserver/"
-        status, body = splice_conn.POST(url, splice_server_data)
-        _LOG.debug("POST to %s: received %s %s" % (url, status, body))
-        if status != 204:
-            _LOG.error("Splice server metadata was not uploaded correctly")
-            utils.system_exit(os.EX_DATAERR, "Error uploading splice server data")
-
-        # upload the data to rcs
-        url = "/v1/marketingproductusage/"
-        status, body = splice_conn.POST(url, mpu_data)
-        _LOG.debug("POST to %s: received %s %s" % (url, status, body))
-        if status != 202 and status != 204:
-            _LOG.error("MarketingProductUsage data was not uploaded correctly")
-            utils.system_exit(os.EX_DATAERR, "Error uploading marketing product usage data")
-
-        utils.system_exit(os.EX_OK, "Upload was successful")
-    except Exception, e:
-        _LOG.error("Error uploading MarketingProductUsage Data; Error: %s" % e)
-        utils.system_exit(os.EX_DATAERR, "Error uploading; Error: %s" % e)
-
-
-def get_checkin_config():
-    return {
-        "host" : CONFIG.get("splice", "hostname"),
-        "port" : CONFIG.getint("splice", "port"),
-        "handler" : CONFIG.get("splice", "handler"),
-        "cert" : CONFIG.get("splice", "splice_id_cert"),
-        "key" : CONFIG.get("splice", "splice_id_key"),
-        "ca" : CONFIG.get("splice", "splice_ca_cert"),
-        "splice_server_environment" : CONFIG.get("splice", "splice_server_environment"),
-        "splice_server_hostname" : CONFIG.get("splice", "splice_server_hostname"),
-        "splice_server_description" : CONFIG.get("splice", "splice_server_description"),
-    }
-
-def build_rcs_data(data):
-    """
-    wraps the data in the right format for uploading
-    """
-    return {"objects": data}
-
 
 def get_parent_channel(channel, channels):
     for c in channels:
@@ -215,7 +111,6 @@ def update_system_channel(systems, channels):
         system['software_channel'] = channel_map.get(
                                         system['software_channel'],
                                         system['software_channel'])
-
 
 def spacewalk_sync(options):
     """
@@ -273,6 +168,7 @@ def splice_sync(options):
     katello_consumers = get_katello_consumers()
     katello_client = KatelloConnection()
     dt = transforms.DataTransforms()
+    sps = splice_push.SplicePushSync()
     _LOG.info("calculating marketing product usage")
 
     # create the base marketing usage list
@@ -288,7 +184,7 @@ def splice_sync(options):
                                         rmu['instance_identifier']))}), 
                                         rcs_mkt_usage)
     _LOG.info("uploading to splice...")
-    upload_to_rcs(mpu_data=build_rcs_data(rcs_mkt_usage), sample_json=options.sample_json)
+    sps.upload_to_rcs(mpu_data=sps.build_rcs_data(rcs_mkt_usage), sample_json=options.sample_json)
     _LOG.info("upload completed")
 
 
