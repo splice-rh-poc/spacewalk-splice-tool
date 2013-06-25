@@ -17,7 +17,7 @@ import socket
 
 from base import SpliceToolTest
 
-from spacewalk_splice_tool import checkin
+from spacewalk_splice_tool import checkin, katello_sync
 from spacewalk_splice_tool import sw_client
 
 
@@ -80,8 +80,8 @@ class CheckinTest(SpliceToolTest):
         mocked_cp_client.getConsumers.return_value = consumer_list
         
         options = Mock()
-        delete_stale_consumers = self.mock(checkin.KatelloPushSync, 'delete_stale_consumers')
-        upload_to_cp = self.mock(checkin.KatelloPushSync, 'upload_to_katello')
+        delete_stale_consumers = self.mock(katello_sync.KatelloPushSync, 'delete_stale_consumers')
+        upload_to_cp = self.mock(katello_sync.KatelloPushSync, 'upload_to_katello')
 
         checkin.spacewalk_sync(options)
 

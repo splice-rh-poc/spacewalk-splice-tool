@@ -13,7 +13,7 @@
 
 from mock import Mock, call
 
-from spacewalk_splice_tool.checkin import KatelloPushSync
+from spacewalk_splice_tool.katello_sync import KatelloPushSync
 
 from base import SpliceToolTest
 
