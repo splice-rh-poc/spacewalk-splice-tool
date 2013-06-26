@@ -14,14 +14,11 @@ from katello.client.api.user_role import UserRoleAPI
 from katello.client.api.custom_info import CustomInfoAPI
 from katello.client import server
 from katello.client.server import BasicAuthentication
-from subscription_manager import logutil
 import logging
 from spacewalk_splice_tool import utils, constants
 
 _LOG = logging.getLogger(__name__)
 CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
-
-logutil.init_logger()
 
 
 class NotFoundException():

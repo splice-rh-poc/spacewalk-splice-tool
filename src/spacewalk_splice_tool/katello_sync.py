@@ -254,7 +254,12 @@ class KatelloPushSync:
                 if (size % 10) == 0 and size != 0:
                     _LOG.info("%s consumers left to process" % size)
                 consumer = q.get()
-                self._upload_consumer_to_katello(consumer)
+
+                try:
+                    self._upload_consumer_to_katello(consumer)
+                except Exception, e:
+                    _LOG.error("Exception from worker: %s" % e)
+
                 q.task_done()
 
         _LOG.debug("starting queue")
