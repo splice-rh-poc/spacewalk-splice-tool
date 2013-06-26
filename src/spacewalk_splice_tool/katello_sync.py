@@ -11,41 +11,17 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from datetime import datetime
-import io
-import json
 import logging
-from optparse import OptionParser
-import os
-import re
-import socket
-import sys
 import tempfile
-import time
 from Queue import Queue
 from threading import Thread
-
-from certutils import certutils
-from dateutil.tz import tzutc
-from splice.common.connect import BaseConnection
-import splice.common.utils
-
-from spacewalk_splice_tool import facts, connect, utils, constants, transforms
-from spacewalk_splice_tool.sw_client import SpacewalkClient
-from spacewalk_splice_tool.katello_connect import KatelloConnection, NotFoundException
-
-_LIBPATH = "/usr/share/rhsm"
-# add to the path if need be
-if _LIBPATH not in sys.path:
-    sys.path.append(_LIBPATH)
-
-from subscription_manager.certdirectory import CertificateDirectory
 
 _LOG = logging.getLogger(__name__)
 
 SAT_OWNER_PREFIX = 'satellite-'
 
-NUM_THREADS=4
+NUM_THREADS = 4
+
 
 class KatelloPushSync:
     """
@@ -61,7 +37,8 @@ class KatelloPushSync:
         """
 
         owners = self.katello_client.getOwners()
-        # we need to iterate over a sorted list, to ensure org #1 is created before others
+        # we need to iterate over a sorted list, to ensure org #1
+        # is created before others
         org_ids = sorted(orgs.keys())
         owner_label_map = {}
         for owner in owners:
@@ -72,41 +49,44 @@ class KatelloPushSync:
         for org_id in org_ids:
             katello_label = SAT_OWNER_PREFIX + org_id
             if katello_label not in owner_labels:
-                _LOG.info("creating owner %s (%s), owner is in spacewalk but not katello" % (katello_label, orgs[org_id]))
+                _LOG.info("creating owner %s (%s), owner is in spacewalk but not katello" %
+                          (katello_label, orgs[org_id]))
                 self.katello_client.createOwner(label=katello_label, name=orgs[org_id])
                 self.katello_client.createOrgAdminRolePermission(kt_org_label=orgs[org_id])
-                # if we are not the first org, create a distributor for us in the first org
+                # if we are not the first org, create a
+                # distributor for us in the first org
                 if org_id is not "1":
-                    _LOG.info("creating distributor for %s (org id: %s)" % (orgs[org_id], org_id)) 
-                    distributor = self.katello_client.createDistributor(name="Distributor for %s" % orgs[org_id], root_org='satellite-1')
-                    manifest_data = self.katello_client.exportManifest(dist_uuid = distributor['uuid'])
-                    # katello-cli does some magic that requires an actual file here
+                    _LOG.info("creating distributor for %s (org id: %s)" %
+                              (orgs[org_id], org_id))
+                    distributor = self.katello_client.createDistributor(
+                        name="Distributor for %s" % orgs[org_id],
+                        root_org='satellite-1')
+                    manifest_data = self.katello_client.exportManifest(
+                        dist_uuid=distributor['uuid'])
+                    # katello-cli does some magic that
+                    # requires an actual file here
                     manifest_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
                     manifest_filename = manifest_file.name
                     _LOG.info("manifest temp file is %s" % manifest_filename)
                     manifest_file.write(manifest_data)
                     manifest_file.close()
                     manifest_file = open(manifest_filename, 'r')
-            
+
                     # this uses the org name, not label
-                    provider = self.katello_client.getRedhatProvider(org=orgs[org_id])
-                    self.katello_client.importManifest(prov_id=provider['id'], file = manifest_file)
+                    provider = self.katello_client.getRedhatProvider(
+                        org=orgs[org_id])
+                    self.katello_client.importManifest(prov_id=provider['id'], file=manifest_file)
                     # explicit close to make sure the temp file gets deleted
                     manifest_file.close()
-            # Check that the org names are also equal, as the name can be modified
-            # in Satellite at any time.
+            # Check that the org names are also equal, as the name can be
+            # modified in Satellite at any time.
             elif orgs[org_id] != owner_label_map[katello_label]['name']:
-                self.katello_client.updateOwner(
-                    owner_label_map[katello_label]['name'],
-                    {'name':orgs[org_id]})
-                self.katello_client.updateDistributor(
-                    'Distributor for %s' % owner_label_map[katello_label]['name'],
-                    'satellite-1',
-                    {'name':'Distributor for %s' % orgs[org_id]})
-                self.katello_client.updateRole(
-                    'Org Admin Role for %s' %
-                        owner_label_map[katello_label]['name'],
-                    'Org Admin Role for %s' % orgs[org_id])
+                self.katello_client.updateOwner(owner_label_map[katello_label]['name'], {'name': orgs[org_id]})
+                self.katello_client.updateDistributor('Distributor for %s' % owner_label_map[katello_label]['name'],
+                                                      'satellite-1',
+                                                      {'name': 'Distributor for %s' % orgs[org_id]})
+                self.katello_client.updateRole('Org Admin Role for %s' % owner_label_map[katello_label]['name'],
+                                               'Org Admin Role for %s' % orgs[org_id])
 
         # get the owner list again
         owners = self.katello_client.getOwners()
@@ -120,15 +100,15 @@ class KatelloPushSync:
             # bail out if this isn't an owner we are managing
             if not owner_label.startswith(SAT_OWNER_PREFIX):
                 continue
-            
+
             # get the org ID from the katello name
             kt_org_id = owner_label[len(SAT_OWNER_PREFIX):]
             if kt_org_id not in org_ids:
                 _LOG.info("removing owner %s (name: %s) and associated distributor, owner is no longer in spacewalk"
-                                    %  (owner_label, owner_labels_names[owner_label]))
-                self.katello_client.deleteDistributor(name="Distributor for %s" % owner_labels_names[owner_label], root_org='satellite-1')
+                          % (owner_label, owner_labels_names[owner_label]))
+                self.katello_client.deleteDistributor(
+                    name="Distributor for %s" % owner_labels_names[owner_label], root_org='satellite-1')
                 self.katello_client.deleteOwner(name=owner_labels_names[owner_label])
-                
 
     def update_users(self, sw_userlist):
         """
@@ -145,7 +125,7 @@ class KatelloPushSync:
         for sw_username in sw_users.keys():
             if sw_username not in kt_users.keys():
                 _LOG.info("adding new user %s to katello" % sw_username)
-                created_kt_user = self.katello_client.createUser(username=sw_username, email=sw_users[sw_username]['email']) 
+                self.katello_client.createUser(username=sw_username, email=sw_users[sw_username]['email'])
 
     def update_roles(self, sw_userlist):
         sw_users = {}
@@ -163,19 +143,18 @@ class KatelloPushSync:
                 continue
 
             # get a flat list of role names, for comparison with sw
-            kt_roles = map(lambda x: x['name'], self.katello_client.getRoles(user_id = kt_users[kt_username]['id']))
+            kt_roles = map(lambda x: x['name'], self.katello_client.getRoles(user_id=kt_users[kt_username]['id']))
             sw_roles = sw_users[kt_username]['role'].split(';')
             sw_user_org = sw_users[kt_username]['organization']
 
-
             # add any new roles
             for sw_role in sw_roles:
-                _LOG.debug("examining sw role %s for org %s against kt role set %s" % (sw_role, sw_user_org,  kt_roles))
-                if sw_role == 'Organization Administrator' and \
-                    "Org Admin Role for %s" % sw_user_org not in kt_roles:
+                _LOG.debug("examining sw role %s for org %s against kt role set %s" % (sw_role, sw_user_org, kt_roles))
+
+                if sw_role == 'Organization Administrator' and "Org Admin Role for %s" % sw_user_org not in kt_roles:
                         _LOG.info("adding %s to %s org admin role in katello" % (kt_username, sw_user_org))
-                        self.katello_client.grantOrgAdmin(
-                            kt_user=kt_users[kt_username], kt_org_label=sw_user_org)
+                        self.katello_client.grantOrgAdmin(kt_user=kt_users[kt_username], kt_org_label=sw_user_org)
+
                 elif sw_role == 'Satellite Administrator' and 'Administrator' not in kt_roles:
                         _LOG.info("adding %s to full admin role in katello" % kt_username)
                         self.katello_client.grantFullAdmin(kt_user=kt_users[kt_username])
@@ -184,15 +163,15 @@ class KatelloPushSync:
             for kt_role in kt_roles:
                 # TODO: handle sat admin
                 _LOG.debug("examining kt role %s against sw role set %s for org %s" % (kt_role, sw_roles, sw_user_org))
+
                 if kt_role == "Org Admin Role for satellite-%s" % sw_users[kt_username]['organization_id'] and \
-                    "Organization Administrator" not in sw_roles:
+                        "Organization Administrator" not in sw_roles:
                     _LOG.info("removing %s from %s org admin role in katello" % (kt_username, "satellite-%s" % sw_user_org))
-                    self.katello_client.ungrantOrgAdmin(kt_user=kt_users[kt_username],
-                                                   kt_org_label=sw_user_org)
+                    self.katello_client.ungrantOrgAdmin(kt_user=kt_users[kt_username], kt_org_label=sw_user_org)
+
                 elif kt_role == 'Administrator' and 'Satellite Administrator' not in sw_roles:
                         _LOG.info("removing %s from full admin role in katello" % kt_username)
                         self.katello_client.ungrantFullAdmin(kt_user=kt_users[kt_username])
-                    
 
     def delete_stale_consumers(self, consumer_list, system_list):
         """
@@ -206,7 +185,7 @@ class KatelloPushSync:
         consumers_to_delete = []
 
         for consumer in consumer_list:
-            if not consumer['facts'].has_key('systemid') or consumer['facts']['systemid'] is None:
+            if not 'systemid' in consumer['facts'] or consumer['facts']['systemid'] is None:
                     _LOG.debug("consumer %s has no systemid, skipping" % consumer['name'])
                     continue
             # don't delete consumers that are not in orgs we manage!
@@ -229,9 +208,9 @@ class KatelloPushSync:
         """
         sysid_consumer_map = {}
         for consumer in katello_consumer_list:
-          sysid = self.katello_client.getSpacewalkID(consumer['id'])
-          # katello requires both uuid and name
-          sysid_consumer_map[sysid] = (consumer['uuid'], consumer['name'])
+            sysid = self.katello_client.getSpacewalkID(consumer['id'])
+            # katello requires both uuid and name
+            sysid_consumer_map[sysid] = (consumer['uuid'], consumer['name'])
 
         for host_guest in host_guests:
             host_consumer_id_name = sysid_consumer_map[host_guest['server_id']]
@@ -243,27 +222,26 @@ class KatelloPushSync:
 
             _LOG.debug("detected guest IDs %s for host %s" % (guest_consumer_ids, host_consumer_id_name))
 
-            self.katello_client.updateConsumer(name = host_consumer_id_name[1], cp_uuid=host_consumer_id_name[0], guest_uuids=guest_consumer_ids)
+            self.katello_client.updateConsumer(name=host_consumer_id_name[1], cp_uuid=host_consumer_id_name[0], guest_uuids=guest_consumer_ids)
 
-
-    def _upload_consumer_to_katello(self, consumer):            
+    def _upload_consumer_to_katello(self, consumer):
         kt_consumer = self.katello_client.findBySpacewalkID("satellite-%s" % consumer['owner'], consumer['id'])
         if kt_consumer:
             # use the existing kt/cp uuid when updating
             self.katello_client.updateConsumer(cp_uuid=kt_consumer['uuid'],
-                                          name = consumer['name'],
-                                          facts=consumer['facts'],
-                                          installed_products=consumer['installed_products'],
-                                          owner=consumer['owner'],
-                                          last_checkin=consumer['last_checkin'])
+                                               name=consumer['name'],
+                                               facts=consumer['facts'],
+                                               installed_products=consumer['installed_products'],
+                                               owner=consumer['owner'],
+                                               last_checkin=consumer['last_checkin'])
             _LOG.debug("updated consumer %s" % kt_consumer['uuid'])
         else:
             uuid = self.katello_client.createConsumer(name=consumer['name'],
-                                                sw_uuid=consumer['id'],
-                                                facts=consumer['facts'],
-                                                installed_products=consumer['installed_products'],
-                                                last_checkin=consumer['last_checkin'],
-                                                owner=consumer['owner'])
+                                                      sw_uuid=consumer['id'],
+                                                      facts=consumer['facts'],
+                                                      installed_products=consumer['installed_products'],
+                                                      last_checkin=consumer['last_checkin'],
+                                                      owner=consumer['owner'])
             _LOG.debug("created consumer %s" % uuid)
 
     def upload_to_katello(self, consumers):
@@ -292,4 +270,3 @@ class KatelloPushSync:
         _LOG.debug("starting workers")
         q.join()
         _LOG.debug("queue work is complete")
-

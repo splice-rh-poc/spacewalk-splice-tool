@@ -50,7 +50,7 @@ pep8:
 
 rpmlint:
 	@TMPFILE=`mktemp` || exit 1; \
-	rpmlint -f rpmlint.config python-rhsm.spec | grep -v "^.*packages and .* specfiles checked\;" | tee $$TMPFILE; \
+	rpmlint -f rpmlint.config spacewalk-splice-tool.spec | grep -v "^.*packages and .* specfiles checked\;" | tee $$TMPFILE; \
 	! test -s $$TMPFILE
 
 stylish: pyflakes whitespacelint pep8 gettext_lint rpmlint debuglint

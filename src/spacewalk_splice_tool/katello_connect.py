@@ -1,17 +1,7 @@
 #!/usr/bin/python
-import base64
 import logging
-import sys
 import itertools
-import urllib
-import urlparse
-from rhsm.connection import UEPConnection, RestlibException
-from datetime import datetime, timedelta
-from dateutil.tz import tzutc
-_LIBPATH = "/usr/share/rhsm"
-# add to the path if need be
-if _LIBPATH not in sys.path:
-    sys.path.append(_LIBPATH)
+from datetime import datetime
 
 from katello.client.api.organization import OrganizationAPI
 from katello.client.api.environment import EnvironmentAPI
@@ -23,46 +13,39 @@ from katello.client.api.distributor import DistributorAPI
 from katello.client.api.user_role import UserRoleAPI
 from katello.client.api.custom_info import CustomInfoAPI
 from katello.client import server
-from katello.client.server import BasicAuthentication, SSLAuthentication
+from katello.client.server import BasicAuthentication
 from subscription_manager import logutil
-from subscription_manager.certdirectory import CertificateDirectory
-from rhsm.certificate import GMT
-import oauth2 as oauth
-import httplib
 import logging
-import base64
-import json
 from spacewalk_splice_tool import utils, constants
-from splice.common.models import Product, Pool, Rules
-from splice.common.utils import convert_to_datetime
 
 _LOG = logging.getLogger(__name__)
 CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
 
 logutil.init_logger()
 
+
 class NotFoundException():
     pass
+
 
 class KatelloConnection():
 
     def __init__(self):
-        self.orgapi  = OrganizationAPI()
-        self.systemapi  = SystemAPI()
-        self.userapi  = UserAPI()
-        self.envapi  = EnvironmentAPI()
-        self.rolesapi  = UserRoleAPI()
-        self.permissionapi  = PermissionAPI()
-        self.distributorapi  = DistributorAPI()
-        self.provapi  = ProviderAPI()
-        self.infoapi  = CustomInfoAPI()
+        self.orgapi = OrganizationAPI()
+        self.systemapi = SystemAPI()
+        self.userapi = UserAPI()
+        self.envapi = EnvironmentAPI()
+        self.rolesapi = UserRoleAPI()
+        self.permissionapi = PermissionAPI()
+        self.distributorapi = DistributorAPI()
+        self.provapi = ProviderAPI()
+        self.infoapi = CustomInfoAPI()
         s = server.KatelloServer(CONFIG.get("katello", "hostname"),
                                  CONFIG.get("katello", "port"),
                                  CONFIG.get("katello", "proto"),
                                  CONFIG.get("katello", "api_url"))
         s.set_auth_method(BasicAuthentication(CONFIG.get("katello", "admin_user"), CONFIG.get("katello", "admin_pass")))
         server.set_active_server(s)
-
 
     def getOwners(self):
         return self.orgapi.organizations()
@@ -71,8 +54,7 @@ class KatelloConnection():
         return self.distributorapi.create(name=name, org=root_org, environment_id=None)
 
     def deleteDistributor(self, name, root_org):
-        dist_uuid = self.distributorapi.distributor_by_name(
-            distName=name, orgName=root_org)['uuid']
+        dist_uuid = self.distributorapi.distributor_by_name(distName=name, orgName=root_org)['uuid']
         return self.distributorapi.delete(distributor_uuid=dist_uuid)
 
     def updateDistributor(self, name, root_org, params):
@@ -81,10 +63,10 @@ class KatelloConnection():
         return self.distributorapi.update(dist_uuid, params)
 
     def exportManifest(self, dist_uuid):
-        return self.distributorapi.export_manifest(distributor_uuid = dist_uuid)
+        return self.distributorapi.export_manifest(distributor_uuid=dist_uuid)
 
     def importManifest(self, prov_id, file):
-        return self.provapi.import_manifest(provId=prov_id, manifestFile = file)
+        return self.provapi.import_manifest(provId=prov_id, manifestFile=file)
 
     def getRedhatProvider(self, org):
         return self.provapi.provider_by_name(orgName=org, provName="Red Hat")
@@ -130,34 +112,31 @@ class KatelloConnection():
         if result:
             return result[0]
         return
-        
-    def createConsumer(self, name, facts, installed_products, last_checkin,
-                        sw_uuid=None, owner=None):
 
+    def createConsumer(self, name, facts, installed_products, last_checkin, sw_uuid=None, owner=None):
         # there are four calls here! we need to work with katello to send all this stuff up at once
         consumer = self.systemapi.register(name=name, org='satellite-' + owner, environment_id=None,
-                                            facts=facts, activation_keys=None, cp_type='system', installed_products=installed_products)
+                                           facts=facts, activation_keys=None, cp_type='system',
+                                           installed_products=installed_products)
 
         #TODO: get rid of this extra call!
         facts = consumer['facts']
-        if facts.has_key('virt.is_guest'):
-            facts['virt.uuid'] =  consumer['uuid']
-            self.updateConsumer(name = consumer['name'], cp_uuid = consumer['uuid'], facts = facts)
-
+        if 'virt.is_guest' in facts:
+            facts['virt.uuid'] = consumer['uuid']
+            self.updateConsumer(name=consumer['name'], cp_uuid=consumer['uuid'], facts=facts)
 
         self.systemapi.checkin(consumer['uuid'], self._convert_date(last_checkin))
         self.systemapi.refresh_subscriptions(consumer['uuid'])
 
         self.infoapi.add_custom_info(informable_type='system', informable_id=consumer['id'],
-                                        keyname='spacewalk-id', value=sw_uuid) 
+                                     keyname='spacewalk-id', value=sw_uuid)
 
         return consumer['uuid']
-        
 
-   
-    # katello demands a name here 
-    def updateConsumer(self, cp_uuid, name, facts=None, installed_products=None, last_checkin=None, owner=None, guest_uuids=None,
-                        release=None, service_level=None):
+    # katello demands a name here
+    def updateConsumer(self, cp_uuid, name, facts=None, installed_products=None,
+                       last_checkin=None, owner=None, guest_uuids=None,
+                       release=None, service_level=None):
         params = {}
         params['name'] = name
         if installed_products is not None:
@@ -166,8 +145,8 @@ class KatelloConnection():
             params['guestIds'] = guest_uuids
         if facts is not None:
             # this logic should be moved elsewhere
-            if facts.has_key('virt.is_guest'):
-                facts['virt.uuid'] =  cp_uuid
+            if 'virt.is_guest' in facts:
+                facts['virt.uuid'] = cp_uuid
             params['facts'] = facts
         if release is not None:
             params['releaseVer'] = release
@@ -182,13 +161,13 @@ class KatelloConnection():
 
     def getConsumers(self, owner=None, with_details=True):
         # TODO: this has a lot of logic and could be refactored
-        
+
         # the API wants "orgId" but they mean "label"
         org_ids = map(lambda x: x['label'], self.orgapi.organizations())
         consumer_list = []
         for org_id in org_ids:
             consumer_list.append(self.systemapi.systems_by_org(orgId=org_id))
-        
+
         # flatten the list
         consumer_list = list(itertools.chain.from_iterable(consumer_list))
         # return what we have, if we don't need the detailed list
@@ -203,7 +182,6 @@ class KatelloConnection():
             full_consumers_list.append(full_consumer)
 
         return full_consumers_list
-    
 
     def _getConsumer(self, consumer_uuid):
         return self.systemapi.system(system_id=consumer_uuid)
@@ -213,7 +191,7 @@ class KatelloConnection():
         # XXX: only for dev use
         self.systemapi.remove_consumer_deletion_record(consumer_uuid)
 
-    def getRoles(self, user_id = None):
+    def getRoles(self, user_id=None):
         if user_id:
             return self.userapi.roles(user_id=user_id)
         else:
@@ -226,9 +204,9 @@ class KatelloConnection():
     # TODO: this is using kt_org_label but is really kt_org_name
     def createOrgAdminRolePermission(self, kt_org_label):
         role = self.rolesapi.create(name="Org Admin Role for %s" % kt_org_label, description="generated from spacewalk")
-        perm = self.permissionapi.create(roleId = role['id'], name = "Org Admin Permission for %s" % kt_org_label,
-                                         description="generated from spacewalk", type_in="organizations", verbs=None,
-                                         tagIds=None, orgId=kt_org_label, all_tags=True, all_verbs=True)
+        self.permissionapi.create(roleId=role['id'], name="Org Admin Permission for %s" % kt_org_label,
+                                  description="generated from spacewalk", type_in="organizations", verbs=None,
+                                  tagIds=None, orgId=kt_org_label, all_tags=True, all_verbs=True)
 
     def grantOrgAdmin(self, kt_user, kt_org_label):
         oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_label)

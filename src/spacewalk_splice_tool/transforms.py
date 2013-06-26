@@ -11,38 +11,15 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from datetime import datetime
-import io
-import json
 import logging
-from optparse import OptionParser
-import os
-import re
-import socket
-import sys
-import tempfile
-import time
 
-from certutils import certutils
-from dateutil.tz import tzutc
-from splice.common.connect import BaseConnection
-import splice.common.utils
-
-from spacewalk_splice_tool import facts, connect, utils, constants
-from spacewalk_splice_tool.sw_client import SpacewalkClient
-from spacewalk_splice_tool.katello_connect import KatelloConnection, NotFoundException
-
-_LIBPATH = "/usr/share/rhsm"
-# add to the path if need be
-if _LIBPATH not in sys.path:
-    sys.path.append(_LIBPATH)
-
-from subscription_manager.certdirectory import CertificateDirectory
+from spacewalk_splice_tool import facts, utils, constants
 
 _LOG = logging.getLogger(__name__)
 CONFIG = None
 
 SAT_OWNER_PREFIX = 'satellite-'
+
 
 class DataTransforms:
     """
@@ -61,7 +38,7 @@ class DataTransforms:
         """
         retval = {}
 
-        if consumer.has_key('checkin_time') and consumer['checkin_time'] is not None:
+        if 'checkin_time' in consumer and consumer['checkin_time'] is not None:
             retval['splice_server'] = _get_splice_server_uuid()
             retval['checkin_date'] = consumer['checkin_time']
             retval['name'] = consumer['name']
@@ -71,11 +48,10 @@ class DataTransforms:
             retval['entitlement_status'] = consumer['entitlement_status']
             retval['organization_id'] = str(consumer['environment']['organization_id'])
             retval['organization_name'] = consumer['owner']['displayName']
-            retval['facts'] = transform_facts_to_rcs(consumer['facts'])
+            retval['facts'] = self.transform_facts_to_rcs(consumer['facts'])
             return retval
         else:
             _LOG.debug("system entry for %s has no checkin_time, not loading entry into splice db" % consumer['name'])
-
 
     def transform_to_consumers(self, system_details):
         """

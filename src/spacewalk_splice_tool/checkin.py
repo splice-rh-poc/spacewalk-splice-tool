@@ -11,26 +11,14 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from datetime import datetime
-import io
-import json
 import logging
-from optparse import OptionParser
 import os
-import re
 import socket
 import sys
-import tempfile
-import time
 
-from certutils import certutils
-from dateutil.tz import tzutc
-from splice.common.connect import BaseConnection
-import splice.common.utils
-
-from spacewalk_splice_tool import facts, connect, utils, constants, transforms, katello_sync, splice_push
+from spacewalk_splice_tool import utils, constants, transforms, katello_sync, splice_push
 from spacewalk_splice_tool.sw_client import SpacewalkClient
-from spacewalk_splice_tool.katello_connect import KatelloConnection, NotFoundException
+from spacewalk_splice_tool.katello_connect import KatelloConnection
 
 _LIBPATH = "/usr/share/rhsm"
 # add to the path if need be
@@ -46,6 +34,7 @@ SAT_OWNER_PREFIX = 'satellite-'
 
 CERT_DIR_PATH = "/usr/share/rhsm/product/RHEL-6/"
 CERT_DIR = None
+
 
 def get_product_ids(subscribedchannels):
     """
@@ -81,16 +70,18 @@ def get_katello_consumers():
     katello_conn = KatelloConnection()
     return katello_conn.getConsumers()
 
+
 def get_katello_entitlements(uuid):
     katello_conn = KatelloConnection()
     return katello_conn.getEntitlements(uuid)
+
 
 def get_parent_channel(channel, channels):
     for c in channels:
         if c['new_channel_label'] == channel['original_channel_label']:
             return get_parent_channel(c, channels)
     return channel
-    
+
 
 def channel_mapping(channels):
     channel_map = {}
@@ -104,13 +95,12 @@ def channel_mapping(channels):
 
 
 def update_system_channel(systems, channels):
-
     _LOG.info("calculating base channels from cloned channels")
     channel_map = channel_mapping(channels)
     for system in systems:
-        system['software_channel'] = channel_map.get(
-                                        system['software_channel'],
-                                        system['software_channel'])
+        system['software_channel'] = channel_map.get(system['software_channel'],
+                                                     system['software_channel'])
+
 
 def spacewalk_sync(options):
     """
@@ -141,11 +131,8 @@ def spacewalk_sync(options):
 
     _LOG.info("adding installed products to %s spacewalk records" % len(system_details))
     # enrich with engineering product IDs
-    clone_mapping = []
-    map(lambda details :
-            details.update({'installed_products' : \
-                            get_product_ids(details['software_channel'])}),
-                           system_details)
+    map(lambda details:
+        details.update({'installed_products': get_product_ids(details['software_channel'])}), system_details)
 
     # convert the system details to katello consumers
     consumers.extend(dt.transform_to_consumers(system_details))
@@ -166,7 +153,6 @@ def splice_sync(options):
     _LOG.info("Started syncing system data to splice")
     # now pull put out of katello, and into rcs!
     katello_consumers = get_katello_consumers()
-    katello_client = KatelloConnection()
     dt = transforms.DataTransforms()
     sps = splice_push.SplicePushSync()
     _LOG.info("calculating marketing product usage")
@@ -177,12 +163,8 @@ def splice_sync(options):
     rcs_mkt_usage = filter(None, rcs_mkt_usage)
 
     # enrich with product usage info
-    map(lambda rmu : 
-            rmu.update(
-                {'product_info': dt.transform_entitlements_to_rcs(
-                                    get_katello_entitlements(
-                                        rmu['instance_identifier']))}), 
-                                        rcs_mkt_usage)
+    map(lambda rmu:
+        rmu.update({'product_info': dt.transform_entitlements_to_rcs(get_katello_entitlements(rmu['instance_identifier']))}), rcs_mkt_usage)
     _LOG.info("uploading to splice...")
     sps.upload_to_rcs(mpu_data=sps.build_rcs_data(rcs_mkt_usage), sample_json=options.sample_json)
     _LOG.info("upload completed")
@@ -193,7 +175,6 @@ def main(options):
     global CONFIG
     CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
 
-    start_time = time.time()
     _LOG.info("run starting")
 
     socket.setdefaulttimeout(CONFIG.getfloat('main', 'socket_timeout'))
@@ -204,5 +185,4 @@ def main(options):
     if options.splice_sync:
         splice_sync(options)
 
-    finish_time = time.time() - start_time
-    _LOG.info("run complete") 
+    _LOG.info("run complete")

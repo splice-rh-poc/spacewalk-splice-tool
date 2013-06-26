@@ -15,19 +15,20 @@ import base64
 import simplejson as json
 from M2Crypto import SSL, httpslib
 
+
 class BaseConnection(object):
     def __init__(self, host, port, handler, username=None,
                  password=None, cert_file=None, key_file=None, ca_cert=None):
         self.host = host
         self.port = port
         self.handler = handler
-        self.headers = {"Content-type":"application/json",
+        self.headers = {"Content-type": "application/json",
                         "Accept": "application/json"}
         self.username = username
         self.password = password
         self.cert_file = cert_file
         self.cert_key = key_file
-        self.ca_cert  = ca_cert
+        self.ca_cert = ca_cert
 
     def set_basic_auth(self):
         encoded = base64.b64decode(':'.join((self.username, self.password)))

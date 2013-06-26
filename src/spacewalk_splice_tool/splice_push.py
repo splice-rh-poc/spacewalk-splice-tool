@@ -12,32 +12,14 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from datetime import datetime
-import io
-import json
 import logging
-from optparse import OptionParser
 import os
-import re
-import socket
-import sys
-import tempfile
-import time
 
-from certutils import certutils
 from dateutil.tz import tzutc
 from splice.common.connect import BaseConnection
 import splice.common.utils
 
-from spacewalk_splice_tool import facts, connect, utils, constants, transforms, katello_sync
-from spacewalk_splice_tool.sw_client import SpacewalkClient
-from spacewalk_splice_tool.katello_connect import KatelloConnection, NotFoundException
-
-_LIBPATH = "/usr/share/rhsm"
-# add to the path if need be
-if _LIBPATH not in sys.path:
-    sys.path.append(_LIBPATH)
-
-from subscription_manager.certdirectory import CertificateDirectory
+from spacewalk_splice_tool import utils, constants
 
 _LOG = logging.getLogger(__name__)
 CONFIG = None
@@ -46,6 +28,7 @@ SAT_OWNER_PREFIX = 'satellite-'
 
 CERT_DIR_PATH = "/usr/share/rhsm/product/RHEL-6/"
 CERT_DIR = None
+
 
 class SplicePushSync:
     """
@@ -92,25 +75,25 @@ class SplicePushSync:
                 _LOG.info("Will write json data to: %s" % (target_path))
                 f = open(target_path, "w")
                 try:
-                    f.write(splice.common.utils.obj_to_json(data, indent = 4))
+                    f.write(splice.common.utils.obj_to_json(data, indent=4))
                 finally:
                     f.close()
-            except Exception, e:
+            except Exception:
                 _LOG.exception("Unable to write sample json for: %s" % (target_path))
         write_file("sst_mpu.json", mpu_data)
         write_file("sst_splice_server.json", splice_server_data)
 
     def _get_checkin_config(self):
         return {
-            "host" : CONFIG.get("splice", "hostname"),
-            "port" : CONFIG.getint("splice", "port"),
-            "handler" : CONFIG.get("splice", "handler"),
-            "cert" : CONFIG.get("splice", "splice_id_cert"),
-            "key" : CONFIG.get("splice", "splice_id_key"),
-            "ca" : CONFIG.get("splice", "splice_ca_cert"),
-            "splice_server_environment" : CONFIG.get("splice", "splice_server_environment"),
-            "splice_server_hostname" : CONFIG.get("splice", "splice_server_hostname"),
-            "splice_server_description" : CONFIG.get("splice", "splice_server_description"),
+            "host": CONFIG.get("splice", "hostname"),
+            "port": CONFIG.getint("splice", "port"),
+            "handler": CONFIG.get("splice", "handler"),
+            "cert": CONFIG.get("splice", "splice_id_cert"),
+            "key": CONFIG.get("splice", "splice_id_key"),
+            "ca": CONFIG.get("splice", "splice_ca_cert"),
+            "splice_server_environment": CONFIG.get("splice", "splice_server_environment"),
+            "splice_server_hostname": CONFIG.get("splice", "splice_server_hostname"),
+            "splice_server_description": CONFIG.get("splice", "splice_server_description"),
         }
 
     def build_rcs_data(self, data):
@@ -123,12 +106,13 @@ class SplicePushSync:
         cfg = self._get_checkin_config()
         try:
             splice_conn = BaseConnection(cfg["host"], cfg["port"], cfg["handler"],
-                cert_file=cfg["cert"], key_file=cfg["key"], ca_cert=cfg["ca"])
+                                         cert_file=cfg["cert"], key_file=cfg["key"],
+                                         ca_cert=cfg["ca"])
 
             splice_server_data = self._build_server_metadata(cfg)
             if sample_json:
-                write_sample_json(sample_json=sample_json, mpu_data=mpu_data,
-                                splice_server_data=splice_server_data)
+                self.write_sample_json(sample_json=sample_json, mpu_data=mpu_data,
+                                       splice_server_data=splice_server_data)
             # upload the server metadata to rcs
             _LOG.info("sending metadata to server")
             url = "/v1/spliceserver/"

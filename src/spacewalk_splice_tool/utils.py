@@ -12,14 +12,15 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 from ConfigParser import SafeConfigParser
 
-import csv
 import re
 import sys
 
+
 def system_exit(errcode, message=None):
     if message:
-        sys.stderr.write(str(message)+'\n')
+        sys.stderr.write(str(message) + '\n')
     sys.exit(errcode)
+
 
 def read_mapping_file(mappingfile):
     f = open(mappingfile)
@@ -32,6 +33,7 @@ def read_mapping_file(mappingfile):
             dic_data[key] = val
     return dic_data
 
+
 def cfg_init(config_file=None, reinit=False):
     CONFIG = None
     if CONFIG and not reinit:
@@ -40,10 +42,10 @@ def cfg_init(config_file=None, reinit=False):
     CONFIG.read(config_file)
     return CONFIG
 
+
 def get_release():
     f = open('/etc/redhat-release')
     lines = f.readlines()
     f.close()
     release = "RHEL-" + str(lines).split(' ')[6].split('.')[0]
     return release
-
