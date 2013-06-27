@@ -15,7 +15,9 @@ from datetime import datetime
 import logging
 import os
 
+from certutils import certutils
 from dateutil.tz import tzutc
+
 from splice.common.connect import BaseConnection
 import splice.common.utils
 
