@@ -27,7 +27,7 @@ class SpliceToolTest(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(SpliceToolTest, self).__init__(*args, **kwargs)
-        self._mocks = []
+        self._mocks = {}
 
     def setUp(self):
         super(SpliceToolTest, self).setUp()
@@ -44,7 +44,7 @@ class SpliceToolTest(unittest.TestCase):
         self.unmock_all()
 
     def mock(self, parent, child, return_value=None):
-        self._mocks.append([parent, child, getattr(parent, child)])
+        self._mocks[(parent, child)] = getattr(parent, child)
         new_mock = Mock()
         if return_value is not None:
             new_mock.return_value = return_value
@@ -52,8 +52,13 @@ class SpliceToolTest(unittest.TestCase):
         return new_mock
 
     def unmock_all(self):
-        for parent, child, child_object in self._mocks:
+        for _mock in self._mocks:
+            parent, child = _mock
+            child_object = self._mocks[_mock]
             setattr(parent, child, child_object)
+
+    def unmock(self, parent, child):
+        setattr(parent, child, self._mocks.pop((parent, child)))
 
     def mock_config(self):
         self.old_config = checkin.CONFIG
