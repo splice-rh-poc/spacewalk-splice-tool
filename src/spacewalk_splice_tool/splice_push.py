@@ -131,8 +131,6 @@ class SplicePushSync:
             if status != 202 and status != 204:
                 _LOG.error("MarketingProductUsage data was not uploaded correctly")
                 utils.system_exit(os.EX_DATAERR, "Error uploading marketing product usage data")
-
-            utils.system_exit(os.EX_OK, "Upload was successful")
         except Exception, e:
             _LOG.error("Error uploading MarketingProductUsage Data; Error: %s" % e)
             utils.system_exit(os.EX_DATAERR, "Error uploading; Error: %s" % e)
