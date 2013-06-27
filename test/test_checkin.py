@@ -147,6 +147,14 @@ class CheckinTest(SpliceToolTest):
         mpu = {'objects': []}
         self.assertEquals(mpu, mocked_sc.POST.call_args_list[1][0][1])
 
+    def test_get_katello_entitlements(self):
+        
+        kc = self.mock(checkin, 'KatelloConnection', Mock())
+        checkin.get_katello_entitlements('test-uuid')
+        self.assertTrue(kc.return_value.getEntitlements.called)
+        self.assertEquals('test-uuid',
+                          kc.return_value.getEntitlements.call_args[0][0])
+
 
 user_list = [{'username': 'admin', 
               'first_name': 'James', 
