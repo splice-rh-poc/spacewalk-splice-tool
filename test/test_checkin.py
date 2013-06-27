@@ -94,6 +94,58 @@ class CheckinTest(SpliceToolTest):
         self.assertTrue(upload_to_cp.called)
         self.assertEquals(2, len(upload_to_cp.call_args[0][0]))
 
+    def test_splice_sync(self):
+        mocked_cp_client_class = self.mock(checkin, 'KatelloConnection')
+        mocked_cp_client = Mock()
+        mocked_cp_client_class.return_value = mocked_cp_client
+        mocked_cp_client.getConsumers.return_value = consumer_list
+
+        mocked_sc_client_class = self.mock(
+            checkin.splice_push, 'BaseConnection')
+        mocked_sc = Mock()
+        mocked_sc_client_class.return_value = mocked_sc
+        mocked_sc.POST.return_value = (204, 'test_body')
+
+        self.mock(checkin.splice_push.SplicePushSync, 
+                  '_get_splice_server_uuid',
+                  'test_uuid')
+
+
+        options = Mock()
+        options.sample_json = False
+
+        checkin.splice_sync(options)
+
+        self.assertTrue(mocked_cp_client.getConsumers.called)
+        self.assertTrue(mocked_sc.POST.called)
+        self.assertEquals(2, mocked_sc.POST.call_count)
+        self.assertEquals('/v1/spliceserver/',
+                          mocked_sc.POST.call_args_list[0][0][0])
+
+        ss_data = {'objects': [{'created': '2013-06-27T18:59:55.136443+00:00',
+                   'description': 'test_ssd',
+                   'environment': 'test_sse',
+                   'hostname': 'test_ssh',
+                   'updated': '2013-06-27T18:59:55.136443+00:00',
+                   'uuid': 'test_uuid'}]}
+
+        self.assertEquals(
+            ss_data['objects'][0]['description'],
+            mocked_sc.POST.call_args_list[0][0][1]['objects'][0]['description'])
+        self.assertEquals(
+            ss_data['objects'][0]['hostname'],
+            mocked_sc.POST.call_args_list[0][0][1]['objects'][0]['hostname'])
+        self.assertEquals(
+            ss_data['objects'][0]['environment'],
+            mocked_sc.POST.call_args_list[0][0][1]['objects'][0]['environment'])
+        self.assertEquals(
+            ss_data['objects'][0]['uuid'],
+            mocked_sc.POST.call_args_list[0][0][1]['objects'][0]['uuid'])
+
+        self.assertEquals('/v1/marketingproductusage/',
+                          mocked_sc.POST.call_args_list[1][0][0])
+        mpu = {'objects': []}
+        self.assertEquals(mpu, mocked_sc.POST.call_args_list[1][0][1])
 
 
 user_list = [{'username': 'admin', 

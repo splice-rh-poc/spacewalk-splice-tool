@@ -61,6 +61,15 @@ class SpliceToolTest(unittest.TestCase):
         defaults = {'spacewalk': {'host': 'spacewalkhost',
                                   'ssh_key_path': 'spacwealk_ssh_key_path'},
                     'main': {'socket_timeout': '300'},
+                    'splice': {'hostname': 'test_hostname',
+                               'port': '8888',
+                               'handler': 'test_handler',
+                               'splice_id_cert': 'test_cert',
+                               'splice_id_key': 'test_key',
+                               'splice_ca_cert': 'test_ca',
+                               'splice_server_environment': 'test_sse',
+                               'splice_server_hostname': 'test_ssh',
+                               'splice_server_description': 'test_ssd',}
                    }
 
         config = SafeConfigParser(defaults)
