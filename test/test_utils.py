@@ -25,7 +25,7 @@ from spacewalk_splice_tool import utils
 class UtilsTest(SpliceToolTest):
 
     def test_system_exit(self):
-        self.assertRaises(SystemExit, utils.system_exit, 500, 'Test Failure')
+        self.assertRaises(SystemExit, utils.system_exit, 500)
 
     def test_get_release(self):
         self.unmock(utils, 'get_release')
