@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.25
+Version:        0.26
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -72,6 +72,19 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Fri Jun 28 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- multiple small fixups (cduryee@redhat.com)
+- updates to checkin.conf (cduryee@redhat.com)
+- Test for utils (jslagle@redhat.com)
+- Add another test (100% coverage on checkin.py) (jslagle@redhat.com)
+- Add basic test for splice_sync (jslagle@redhat.com)
+- Do not exit from upload_to_rcs, allow it to be handled by main()
+  (jslagle@redhat.com)
+- lots of pep8 fixups (cduryee@redhat.com)
+- use multiple threads when updating consumers (cduryee@redhat.com)
+- fix unit test for org name vs label (cduryee@redhat.com)
+- fix sync options unit test (cduryee@redhat.com)
+
 * Fri Jun 21 2013 James Slagle <jslagle@redhat.com> 0.25-1
 - 972915 - Change sst to run as splice user in cron file (jslagle@redhat.com)
 - Remove unused config option (jslagle@redhat.com)
