@@ -18,6 +18,7 @@ Requires: subscription-manager-migration-data
 Requires: splice-common >= 0.77
 Requires: /usr/sbin/crond
 Requires: katello-cli
+Requires: subscription-manager >= 1.8.11
 
 %description
 A tool for gathering system checkin data from spacewalk server and report to Splice server

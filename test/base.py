@@ -65,7 +65,7 @@ class SpliceToolTest(unittest.TestCase):
         
         defaults = {'spacewalk': {'host': 'spacewalkhost',
                                   'ssh_key_path': 'spacwealk_ssh_key_path'},
-                    'main': {'socket_timeout': '300'},
+                    'main': {'socket_timeout': '300', 'num_threads': '4'},
                     'splice': {'hostname': 'test_hostname',
                                'port': '8888',
                                'handler': 'test_handler',
@@ -98,5 +98,5 @@ class SpliceToolTest(unittest.TestCase):
         product = Mock()
         product.configure_mock(id=69, name='Red Hat Enterprise Linux Server')
         product_cert.configure_mock(products=[product])
-        mocked_cd.findByProduct.return_value = product_cert
+        mocked_cd.find_by_product.return_value = product_cert
         self.mock(checkin, 'CertificateDirectory', mocked_cd)

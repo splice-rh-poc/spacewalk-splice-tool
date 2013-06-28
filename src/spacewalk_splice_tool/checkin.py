@@ -61,19 +61,19 @@ def get_product_ids(subscribedchannels):
     # reformat to how candlepin expects the product id list
     installed_products = []
     for p in product_ids:
-        product_cert = CERT_DIR.findByProduct(str(p))
+        product_cert = CERT_DIR.find_by_product(str(p))
         installed_products.append({"productId": product_cert.products[0].id, "productName": product_cert.products[0].name})
     return installed_products
 
 
 def get_katello_consumers():
     katello_conn = KatelloConnection()
-    return katello_conn.getConsumers()
+    return katello_conn.get_consumers()
 
 
 def get_katello_entitlements(uuid):
     katello_conn = KatelloConnection()
-    return katello_conn.getEntitlements(uuid)
+    return katello_conn.get_entitlements(uuid)
 
 
 def get_parent_channel(channel, channels):
@@ -127,7 +127,7 @@ def spacewalk_sync(options):
     kps.update_users(sw_user_list)
     kps.update_roles(sw_user_list)
 
-    katello_consumer_list = katello_client.getConsumers()
+    katello_consumer_list = katello_client.get_consumers()
     kps.delete_stale_consumers(katello_consumer_list, system_details)
 
     _LOG.info("adding installed products to %s spacewalk records" % len(system_details))
@@ -142,7 +142,7 @@ def spacewalk_sync(options):
     kps.upload_to_katello(consumers)
     _LOG.info("upload completed. updating with guest info..")
     # refresh the consumer list. we need the full details here to get at the system ID
-    katello_consumer_list = katello_client.getConsumers(with_details=False)
+    katello_consumer_list = katello_client.get_consumers(with_details=False)
     kps.upload_host_guest_mapping(hosts_guests, katello_consumer_list)
     _LOG.info("guest upload completed")
 

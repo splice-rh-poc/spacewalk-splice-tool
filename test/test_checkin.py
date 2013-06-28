@@ -73,11 +73,11 @@ class CheckinTest(SpliceToolTest):
         # this should be populated eventually
         mocked_sw_client.get_host_guest_list.return_value = []
 
-        mocked_cp_client.getOwners.return_value = owner_list
-        mocked_cp_client.getRedhatProvider.return_value = provider
-        mocked_cp_client.getRoles.return_value = role_list
-        mocked_cp_client.getUsers.return_value = cp_user_list
-        mocked_cp_client.getConsumers.return_value = consumer_list
+        mocked_cp_client.get_owners.return_value = owner_list
+        mocked_cp_client.get_redhat_provider.return_value = provider
+        mocked_cp_client.get_roles.return_value = role_list
+        mocked_cp_client.get_users.return_value = cp_user_list
+        mocked_cp_client.get_consumers.return_value = consumer_list
         
         options = Mock()
         delete_stale_consumers = self.mock(katello_sync.KatelloPushSync, 'delete_stale_consumers')
@@ -98,7 +98,7 @@ class CheckinTest(SpliceToolTest):
         mocked_cp_client_class = self.mock(checkin, 'KatelloConnection')
         mocked_cp_client = Mock()
         mocked_cp_client_class.return_value = mocked_cp_client
-        mocked_cp_client.getConsumers.return_value = consumer_list
+        mocked_cp_client.get_consumers.return_value = consumer_list
 
         mocked_sc_client_class = self.mock(
             checkin.splice_push, 'BaseConnection')
@@ -107,7 +107,7 @@ class CheckinTest(SpliceToolTest):
         mocked_sc.POST.return_value = (204, 'test_body')
 
         self.mock(checkin.splice_push.SplicePushSync, 
-                  '_get_splice_server_uuid',
+                  'get_splice_server_uuid',
                   'test_uuid')
 
 
@@ -116,7 +116,7 @@ class CheckinTest(SpliceToolTest):
 
         checkin.splice_sync(options)
 
-        self.assertTrue(mocked_cp_client.getConsumers.called)
+        self.assertTrue(mocked_cp_client.get_consumers.called)
         self.assertTrue(mocked_sc.POST.called)
         self.assertEquals(2, mocked_sc.POST.call_count)
         self.assertEquals('/v1/spliceserver/',
@@ -151,9 +151,9 @@ class CheckinTest(SpliceToolTest):
         
         kc = self.mock(checkin, 'KatelloConnection', Mock())
         checkin.get_katello_entitlements('test-uuid')
-        self.assertTrue(kc.return_value.getEntitlements.called)
+        self.assertTrue(kc.return_value.get_entitlements.called)
         self.assertEquals('test-uuid',
-                          kc.return_value.getEntitlements.call_args[0][0])
+                          kc.return_value.get_entitlements.call_args[0][0])
 
 
 user_list = [{'username': 'admin', 

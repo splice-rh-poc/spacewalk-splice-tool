@@ -44,63 +44,63 @@ class KatelloConnection():
         s.set_auth_method(BasicAuthentication(CONFIG.get("katello", "admin_user"), CONFIG.get("katello", "admin_pass")))
         server.set_active_server(s)
 
-    def getOwners(self):
+    def get_owners(self):
         return self.orgapi.organizations()
 
-    def createDistributor(self, name, root_org):
+    def create_distributor(self, name, root_org):
         return self.distributorapi.create(name=name, org=root_org, environment_id=None)
 
-    def deleteDistributor(self, name, root_org):
+    def delete_distributor(self, name, root_org):
         dist_uuid = self.distributorapi.distributor_by_name(distName=name, orgName=root_org)['uuid']
         return self.distributorapi.delete(distributor_uuid=dist_uuid)
 
-    def updateDistributor(self, name, root_org, params):
+    def update_distributor(self, name, root_org, params):
         dist_uuid = self.distributorapi.distributor_by_name(
             distName=name, orgName=root_org)['uuid']
         return self.distributorapi.update(dist_uuid, params)
 
-    def exportManifest(self, dist_uuid):
+    def export_manifest(self, dist_uuid):
         return self.distributorapi.export_manifest(distributor_uuid=dist_uuid)
 
-    def importManifest(self, prov_id, file):
+    def import_manifest(self, prov_id, file):
         return self.provapi.import_manifest(provId=prov_id, manifestFile=file)
 
-    def getRedhatProvider(self, org):
+    def get_redhat_provider(self, org):
         return self.provapi.provider_by_name(orgName=org, provName="Red Hat")
 
-    def getEntitlements(self, system_id):
+    def get_entitlements(self, system_id):
         return self.systemapi.subscriptions(system_id=system_id)['entitlements']
 
-    def getSubscriptionStatus(self, system_uuid):
+    def get_subscription_status(self, system_uuid):
         return self.systemapi.subscription_status(system_id=system_uuid)
 
-    def createOwner(self, label, name):
+    def create_owner(self, label, name):
         return self.orgapi.create(name, label, "no description")
 
-    def deleteOwner(self, name):
+    def delete_owner(self, name):
         # todo: error handling, not sure if orgapi will handle it
         self.orgapi.delete(name)
 
-    def updateOwner(self, name, params):
+    def update_owner(self, name, params):
         return self.orgapi.update(name, params)
 
-    def getUsers(self):
+    def get_users(self):
         return self.userapi.users()
 
-    def createUser(self, username, email):
+    def create_user(self, username, email):
         return self.userapi.create(name=username, pw="CHANGEME", email=email, disabled=False, default_environment=None)
 
-    def deleteUser(self, user_id):
+    def delete_user(self, user_id):
         return self.userapi.delete(user_id=user_id)
 
-    def getSpacewalkID(self, object_id):
+    def get_spacewalk_id(self, object_id):
         # this wants an object ID
         info_list = self.infoapi.get_custom_info(informable_type='system', informable_id=object_id)
         for info in info_list:
             if info['keyname'] == 'spacewalk-id':
                 return info['value']
 
-    def findBySpacewalkID(self, org, spacewalk_id):
+    def find_by_spacewalk_id(self, org, spacewalk_id):
         result = self.systemapi.find_by_custom_info(org, 'spacewalk-id', spacewalk_id)
         if len(result) > 1:
             raise Exception("more than one record found for spacewalk ID %s in org %s!" % (spacewalk_id, org))
@@ -110,7 +110,7 @@ class KatelloConnection():
             return result[0]
         return
 
-    def createConsumer(self, name, facts, installed_products, last_checkin, sw_uuid=None, owner=None):
+    def create_consumer(self, name, facts, installed_products, last_checkin, sw_uuid=None, owner=None):
         # there are four calls here! we need to work with katello to send all this stuff up at once
         consumer = self.systemapi.register(name=name, org='satellite-' + owner, environment_id=None,
                                            facts=facts, activation_keys=None, cp_type='system',
@@ -131,7 +131,7 @@ class KatelloConnection():
         return consumer['uuid']
 
     # katello demands a name here
-    def updateConsumer(self, cp_uuid, name, facts=None, installed_products=None,
+    def update_consumer(self, cp_uuid, name, facts=None, installed_products=None,
                        last_checkin=None, owner=None, guest_uuids=None,
                        release=None, service_level=None):
         params = {}
@@ -156,7 +156,7 @@ class KatelloConnection():
             self.systemapi.checkin(cp_uuid, self._convert_date(last_checkin))
         self.systemapi.refresh_subscriptions(cp_uuid)
 
-    def getConsumers(self, owner=None, with_details=True):
+    def get_consumers(self, owner=None, with_details=True):
         # TODO: this has a lot of logic and could be refactored
 
         # the API wants "orgId" but they mean "label"
@@ -174,70 +174,55 @@ class KatelloConnection():
         full_consumers_list = []
         # unfortunately, we need to call again to get the "full" consumer with facts
         for consumer in consumer_list:
-            full_consumer = self._getConsumer(consumer['uuid'])
-            full_consumer['entitlement_status'] = self.getSubscriptionStatus(consumer['uuid'])
+            full_consumer = self._get_consumer(consumer['uuid'])
+            full_consumer['entitlement_status'] = self.get_subscription_status(consumer['uuid'])
             full_consumers_list.append(full_consumer)
 
         return full_consumers_list
 
-    def _getConsumer(self, consumer_uuid):
+    def _get_consumer(self, consumer_uuid):
         return self.systemapi.system(system_id=consumer_uuid)
 
-    def deleteConsumer(self, consumer_uuid):
+    def delete_consumer(self, consumer_uuid):
         self.systemapi.unregister(consumer_uuid)
         # XXX: only for dev use
         self.systemapi.remove_consumer_deletion_record(consumer_uuid)
 
-    def getRoles(self, user_id=None):
+    def get_roles(self, user_id=None):
         if user_id:
             return self.userapi.roles(user_id=user_id)
         else:
             return self.rolesapi.roles()
 
-    def updateRole(self, name, new_name):
+    def update_role(self, name, new_name):
         role = self.rolesapi.role_by_name(name=name)
         return self.rolesapi.update(role['id'], new_name, role['description'])
 
     # TODO: this is using kt_org_label but is really kt_org_name
-    def createOrgAdminRolePermission(self, kt_org_label):
+    def create_org_admin_role_permission(self, kt_org_label):
         role = self.rolesapi.create(name="Org Admin Role for %s" % kt_org_label, description="generated from spacewalk")
         self.permissionapi.create(roleId=role['id'], name="Org Admin Permission for %s" % kt_org_label,
                                   description="generated from spacewalk", type_in="organizations", verbs=None,
                                   tagIds=None, orgId=kt_org_label, all_tags=True, all_verbs=True)
 
-    def grantOrgAdmin(self, kt_user, kt_org_label):
+    def grant_org_admin(self, kt_user, kt_org_label):
         oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_label)
         if not oa_role:
             _LOG.error("could not obtain org admin role from katello for org %s!" % kt_org_label)
         self.userapi.assign_role(user_id=kt_user['id'], role_id=oa_role['id'])
 
-    def ungrantOrgAdmin(self, kt_user, kt_org_label):
+    def ungrant_org_admin(self, kt_user, kt_org_label):
         oa_role = self.rolesapi.role_by_name(name="Org Admin Role for %s" % kt_org_label)
         self.userapi.unassign_role(user_id=kt_user['id'], role_id=oa_role['id'])
 
-    def grantFullAdmin(self, kt_user):
+    def grant_full_admin(self, kt_user):
         admin_role = self.rolesapi.role_by_name(name="Administrator")
         self.userapi.assign_role(user_id=kt_user['id'], role_id=admin_role['id'])
 
-    def ungrantFullAdmin(self, kt_user, kt_org_label):
+    def ungrant_full_admin(self, kt_user, kt_org_label):
         admin_role = self.rolesapi.role_by_name(name="Administrator")
         self.userapi.unassign_role(user_id=kt_user['id'], role_id=admin_role['id'])
 
     def _convert_date(self, dt):
         retval = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return retval
-
-if __name__ == '__main__':
-    kc = KatelloConnection()
-    print kc.getOwners()
-    print kc.createOwner("foo", "foo name")
-    print kc.deleteOwner("foo")
-    print kc.getOwners()
-
-    print kc.createConsumer("foo", {}, [], '2009-01-01 05:01:01', uuid="123", owner='admin')
-    print kc.unregisterConsumers(["123"])
-    print kc.removeDeletionRecord("123")
-
-    print "Rules = %s" % (kc.getRules())
-    print "Pools = %s" % (kc.getPools())
-    print "Product = %s" % (kc.getProducts())
