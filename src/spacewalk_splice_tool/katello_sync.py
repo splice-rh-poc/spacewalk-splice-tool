@@ -20,16 +20,14 @@ _LOG = logging.getLogger(__name__)
 
 SAT_OWNER_PREFIX = 'satellite-'
 
-NUM_THREADS = 4
-
-
 class KatelloPushSync:
     """
     a class for writing data to katello
     """
 
-    def __init__(self, katello_client):
+    def __init__(self, katello_client, num_threads):
         self.katello_client = katello_client
+        self.num_threads = num_threads
 
     def update_owners(self, orgs):
         """
@@ -264,7 +262,7 @@ class KatelloPushSync:
 
         _LOG.debug("starting queue")
         q = Queue()
-        for i in range(NUM_THREADS):
+        for i in range(self.num_threads):
             _LOG.debug("initializing worker #%i" % i)
             t = Thread(target=worker)
             t.daemon = True
