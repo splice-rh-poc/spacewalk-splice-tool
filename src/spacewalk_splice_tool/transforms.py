@@ -31,7 +31,7 @@ class DataTransforms:
         global CONFIG
         CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
 
-    def transform_to_rcs(self, consumer):
+    def transform_to_rcs(self, consumer, splice_server_uuid):
         """
         convert a katello consumer into something parsable by RCS
         as a MarketingProductUsage obj
@@ -39,7 +39,7 @@ class DataTransforms:
         retval = {}
 
         if 'checkin_time' in consumer and consumer['checkin_time'] is not None:
-            retval['splice_server'] = _get_splice_server_uuid()
+            retval['splice_server'] = splice_server_uuid
             retval['checkin_date'] = consumer['checkin_time']
             retval['name'] = consumer['name']
             retval['service_level'] = consumer['serviceLevel']

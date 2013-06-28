@@ -159,7 +159,9 @@ def splice_sync(options):
     _LOG.info("calculating marketing product usage")
 
     # create the base marketing usage list
-    rcs_mkt_usage = map(dt.transform_to_rcs, katello_consumers)
+    rcs_mkt_usage = []
+    for katello_consumer in katello_consumers:
+        rcs_mkt_usage.append(dt.transform_to_rcs(katello_consumer, sps.get_splice_server_uuid()))
     # strip out blank values that we don't want to send to splice
     rcs_mkt_usage = filter(None, rcs_mkt_usage)
 

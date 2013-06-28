@@ -42,7 +42,7 @@ class SplicePushSync:
         global CONFIG
         CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
 
-    def _get_splice_server_uuid(self):
+    def get_splice_server_uuid(self):
         """
         obtains the UUID that sst is emulating
         """
@@ -50,7 +50,7 @@ class SplicePushSync:
         cutils = certutils.CertUtils()
         return cutils.get_subject_pieces(open(cfg["cert"]).read(), ['CN'])['CN']
 
-    def _build_server_metadata(self, cfg):
+    def _build_server_metadata(self, cfg, splice_server_uuid):
         """
         Build splice server metadata obj
         """
@@ -59,7 +59,7 @@ class SplicePushSync:
         server_metadata['description'] = cfg["splice_server_description"]
         server_metadata['environment'] = cfg["splice_server_environment"]
         server_metadata['hostname'] = cfg["splice_server_hostname"]
-        server_metadata['uuid'] = self._get_splice_server_uuid()
+        server_metadata['uuid'] = splice_server_uuid
         server_metadata['created'] = datetime.now(tzutc()).isoformat()
         server_metadata['updated'] = server_metadata['created']
         # wrap obj for consumption by upstream rcs
@@ -111,7 +111,7 @@ class SplicePushSync:
                                          cert_file=cfg["cert"], key_file=cfg["key"],
                                          ca_cert=cfg["ca"])
 
-            splice_server_data = self._build_server_metadata(cfg)
+            splice_server_data = self._build_server_metadata(cfg, self.get_splice_server_uuid())
             if sample_json:
                 self.write_sample_json(sample_json=sample_json, mpu_data=mpu_data,
                                        splice_server_data=splice_server_data)
