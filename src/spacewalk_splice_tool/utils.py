@@ -14,7 +14,11 @@ from ConfigParser import SafeConfigParser
 
 import re
 import sys
+import logging
+from Queue import Queue
+from threading import Thread
 
+_LOG = logging.getLogger(__name__)
 
 def system_exit(errcode, message=None):
     if message:
@@ -49,3 +53,35 @@ def get_release():
     f.close()
     release = "RHEL-" + str(lines).split(' ')[6].split('.')[0]
     return release
+
+
+def queued_work(worker_method, item_list, num_threads):
+        def worker():
+            while True:
+                size = q.qsize()
+                if (size % 10) == 0 and size != 0:
+                    _LOG.info("%s items left to process" % size)
+                item = q.get()
+
+                try:
+                   return_list.append(worker_method(item))
+                except Exception, e:
+                    _LOG.error("Exception from worker: %s" % e)
+
+                q.task_done()
+
+        _LOG.debug("starting queue")
+        q = Queue()
+        return_list = []
+        for i in range(num_threads):
+            _LOG.debug("initializing worker #%i" % i)
+            t = Thread(target=worker)
+            t.daemon = True
+            t.start()
+
+        for item in item_list:
+            q.put(item)
+        _LOG.debug("starting workers")
+        q.join()
+        _LOG.debug("queue work is complete, returning %s items" % len(return_list))
+        return return_list

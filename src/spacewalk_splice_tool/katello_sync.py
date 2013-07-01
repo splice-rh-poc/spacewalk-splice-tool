@@ -13,8 +13,7 @@
 
 import logging
 import tempfile
-from Queue import Queue
-from threading import Thread
+from spacewalk_splice_tool import utils
 
 _LOG = logging.getLogger(__name__)
 
@@ -29,6 +28,20 @@ class KatelloPushSync:
     def __init__(self, katello_client, num_threads):
         self.katello_client = katello_client
         self.num_threads = num_threads
+
+
+#    def enrich_rmu(self, rcs_mkt_usage):
+#
+#        print rcs_mkt_usage
+#        rmu_instance_id_map = []
+#        for rmu in rcs_mkt_usage:
+#            rmu_instance_id_map[rmu['instance_identifier']] = rmu
+#
+#        entitlements = utils.queued_work(self.katello_client.get_entitlements, rmu_instance_id_map.keys(), self.num_threads)
+#
+#        print entitlements
+#
+#        #return enriched_rmu
 
     def update_owners(self, orgs):
         """
@@ -113,7 +126,6 @@ class KatelloPushSync:
         """
         ensure that the katello user set matches what's in spacewalk
         """
-
         sw_users = {}
         for sw_user in sw_userlist:
             sw_users[sw_user['username']] = sw_user
@@ -247,30 +259,4 @@ class KatelloPushSync:
         """
         Uploads consumer data to katello
         """
-        def worker():
-            while True:
-                size = q.qsize()
-                if (size % 10) == 0 and size != 0:
-                    _LOG.info("%s consumers left to process" % size)
-                consumer = q.get()
-
-                try:
-                    self._upload_consumer_to_katello(consumer)
-                except Exception, e:
-                    _LOG.error("Exception from worker: %s" % e)
-
-                q.task_done()
-
-        _LOG.debug("starting queue")
-        q = Queue()
-        for i in range(self.num_threads):
-            _LOG.debug("initializing worker #%i" % i)
-            t = Thread(target=worker)
-            t.daemon = True
-            t.start()
-
-        for c in consumers:
-            q.put(c)
-        _LOG.debug("starting workers")
-        q.join()
-        _LOG.debug("queue work is complete")
+        utils.queued_work(self._upload_consumer_to_katello, consumers, self.num_threads)

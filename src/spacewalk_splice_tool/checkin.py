@@ -19,6 +19,7 @@ import sys
 from spacewalk_splice_tool import utils, constants, transforms, katello_sync, splice_push
 from spacewalk_splice_tool.sw_client import SpacewalkClient
 from spacewalk_splice_tool.katello_connect import KatelloConnection
+from spacewalk_splice_tool.katello_sync import KatelloPushSync
 
 _LIBPATH = "/usr/share/rhsm"
 # add to the path if need be
@@ -171,6 +172,9 @@ def splice_sync(options):
     # enrich with product usage info
     map(lambda rmu:
         rmu.update({'product_info': dt.transform_entitlements_to_rcs(get_katello_entitlements(rmu['instance_identifier']))}), rcs_mkt_usage)
+
+#    kps = KatelloPushSync(katello_client=KatelloConnection(), num_threads=4)
+#    enriched_rmu = kps.enrich_rmu(rcs_mkt_usage)
     _LOG.info("uploading to splice...")
     sps.upload_to_rcs(mpu_data=sps.build_rcs_data(rcs_mkt_usage), sample_json=options.sample_json)
     _LOG.info("Upload was successful")

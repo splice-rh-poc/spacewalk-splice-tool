@@ -157,7 +157,7 @@ class KatelloConnection():
         self.systemapi.refresh_subscriptions(cp_uuid)
 
     def get_consumers(self, owner=None, with_details=True):
-        # TODO: this has a lot of logic and could be refactored
+        # TODO: this has a lot of logic and could be refactored into katello_sync
 
         # the API wants "orgId" but they mean "label"
         org_ids = map(lambda x: x['label'], self.orgapi.organizations())
@@ -171,12 +171,20 @@ class KatelloConnection():
         if not with_details:
             return consumer_list
 
-        full_consumers_list = []
-        # unfortunately, we need to call again to get the "full" consumer with facts
-        for consumer in consumer_list:
-            full_consumer = self._get_consumer(consumer['uuid'])
-            full_consumer['entitlement_status'] = self.get_subscription_status(consumer['uuid'])
-            full_consumers_list.append(full_consumer)
+        consumer_uuids = map(lambda x: x['uuid'], consumer_list)
+
+        def _get_full_consumer_worker(uuid):
+            full_consumer = self._get_consumer(uuid)
+            full_consumer['entitlement_status'] = self.get_subscription_status(uuid)
+            return full_consumer
+
+        full_consumers_list = utils.queued_work(_get_full_consumer_worker,
+                                                consumer_uuids,
+                                                CONFIG.getint('main','num_threads'))
+
+        if len(consumer_uuids) != len(full_consumers_list):
+            raise Exception("unable to fetch all consumer records (expected %s, found %s), see log for more detail" % 
+                            (len(consumer_uuids), len(full_consumers_list)))
 
         return full_consumers_list
 
