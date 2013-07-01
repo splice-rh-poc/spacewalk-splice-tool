@@ -66,6 +66,10 @@ def queued_work(worker_method, item_list, num_threads):
                 size = q.qsize()
                 if (size % 10) == 0 and size != 0:
                     _LOG.info("%s items left to process" % size)
+
+                # NB: when this throws the Empty exception, the thread
+                # automatically dies.
+                # http://docs.python.org/2/library/threading.html#thread-objects
                 item = q.get()
 
                 try:
