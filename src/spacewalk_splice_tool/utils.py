@@ -22,10 +22,7 @@ _LOG = logging.getLogger(__name__)
 
 
 # Defaults are applied to each section in the config file.
-DEFAULTS = {
-                'num_threads': '1'
-           }
-
+DEFAULTS = {'num_threads': '1'}
 
 
 def system_exit(errcode, message=None):
@@ -72,7 +69,7 @@ def queued_work(worker_method, item_list, num_threads):
                 item = q.get()
 
                 try:
-                   return_list.append(worker_method(item))
+                    return_list.append(worker_method(item))
                 except Exception, e:
                     _LOG.error("Exception from worker: %s" % e)
 

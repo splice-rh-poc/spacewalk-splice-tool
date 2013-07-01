@@ -102,6 +102,7 @@ def update_system_channel(systems, channels):
         system['software_channel'] = channel_map.get(system['software_channel'],
                                                      system['software_channel'])
 
+
 def spacewalk_sync(options):
     """
     Performs the data capture, translation and checkin to katello

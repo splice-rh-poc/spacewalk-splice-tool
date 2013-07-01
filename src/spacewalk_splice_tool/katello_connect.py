@@ -132,8 +132,8 @@ class KatelloConnection():
 
     # katello demands a name here
     def update_consumer(self, cp_uuid, name, facts=None, installed_products=None,
-                       last_checkin=None, owner=None, guest_uuids=None,
-                       release=None, service_level=None):
+                        last_checkin=None, owner=None, guest_uuids=None,
+                        release=None, service_level=None):
         params = {}
         params['name'] = name
         if installed_products is not None:
@@ -180,10 +180,10 @@ class KatelloConnection():
 
         full_consumers_list = utils.queued_work(_get_full_consumer_worker,
                                                 consumer_uuids,
-                                                CONFIG.getint('main','num_threads'))
+                                                CONFIG.getint('main', 'num_threads'))
 
         if len(consumer_uuids) != len(full_consumers_list):
-            raise Exception("unable to fetch all consumer records (expected %s, found %s), see log for more detail" % 
+            raise Exception("unable to fetch all consumer records (expected %s, found %s), see log for more detail" %
                             (len(consumer_uuids), len(full_consumers_list)))
 
         return full_consumers_list

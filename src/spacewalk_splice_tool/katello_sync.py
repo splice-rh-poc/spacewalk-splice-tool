@@ -30,18 +30,16 @@ class KatelloPushSync:
         self.katello_client = katello_client
         self.num_threads = num_threads
 
-
     def enrich_mpu(self, marketing_product_usage):
 
         dt = transforms.DataTransforms()
+
         def _mpu_enrich_worker(mpu):
             mpu.update({'product_info':
                         dt.transform_entitlements_to_rcs(self.katello_client.get_entitlements(mpu['instance_identifier']))})
             return mpu
 
-
         enriched_mpu = utils.queued_work(_mpu_enrich_worker, marketing_product_usage, self.num_threads)
-
         return enriched_mpu
 
     def update_owners(self, orgs):
@@ -96,8 +94,8 @@ class KatelloPushSync:
             elif orgs[org_id] != owner_label_map[katello_label]['name']:
                 self.katello_client.update_owner(owner_label_map[katello_label]['name'], {'name': orgs[org_id]})
                 self.katello_client.update_distributor('Distributor for %s' % owner_label_map[katello_label]['name'],
-                                                      'satellite-1',
-                                                      {'name': 'Distributor for %s' % orgs[org_id]})
+                                                       'satellite-1',
+                                                       {'name': 'Distributor for %s' % orgs[org_id]})
                 self.katello_client.update_role('Org Admin Role for %s' % owner_label_map[katello_label]['name'],
                                                 'Org Admin Role for %s' % orgs[org_id])
 
