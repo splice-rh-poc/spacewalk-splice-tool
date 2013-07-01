@@ -102,7 +102,6 @@ def update_system_channel(systems, channels):
         system['software_channel'] = channel_map.get(system['software_channel'],
                                                      system['software_channel'])
 
-
 def spacewalk_sync(options):
     """
     Performs the data capture, translation and checkin to katello
@@ -171,7 +170,7 @@ def splice_sync(options):
 
     # enrich with product usage info
 
-    kps = KatelloPushSync(katello_client=KatelloConnection(), num_threads=4)
+    kps = KatelloPushSync(katello_client=KatelloConnection(), num_threads=CONFIG.getint('main', 'num_threads'))
     enriched_rmu = kps.enrich_rmu(rcs_mkt_usage)
     _LOG.info("uploading to splice...")
     sps.upload_to_rcs(mpu_data=sps.build_rcs_data(rcs_mkt_usage), sample_json=options.sample_json)
