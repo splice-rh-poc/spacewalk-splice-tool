@@ -31,18 +31,18 @@ class KatelloPushSync:
         self.num_threads = num_threads
 
 
-    def enrich_rmu(self, rcs_mkt_usage):
+    def enrich_mpu(self, marketing_product_usage):
 
         dt = transforms.DataTransforms()
-        def _rmu_enrich_worker(rmu):
-            rmu.update({'product_info':
-                        dt.transform_entitlements_to_rcs(self.katello_client.get_entitlements(rmu['instance_identifier']))})
-            return rmu
+        def _mpu_enrich_worker(mpu):
+            mpu.update({'product_info':
+                        dt.transform_entitlements_to_rcs(self.katello_client.get_entitlements(mpu['instance_identifier']))})
+            return mpu
 
 
-        enriched_rmu = utils.queued_work(_rmu_enrich_worker, rcs_mkt_usage, self.num_threads)
+        enriched_mpu = utils.queued_work(_mpu_enrich_worker, marketing_product_usage, self.num_threads)
 
-        return enriched_rmu
+        return enriched_mpu
 
     def update_owners(self, orgs):
         """

@@ -159,18 +159,18 @@ def splice_sync(options):
     _LOG.info("calculating marketing product usage")
 
     # create the base marketing usage list
-    rcs_mkt_usage = []
+    mpu_list = []
     for katello_consumer in katello_consumers:
-        rcs_mkt_usage.append(dt.transform_to_rcs(katello_consumer, sps.get_splice_server_uuid()))
+        mpu_list.append(dt.transform_to_rcs(katello_consumer, sps.get_splice_server_uuid()))
     # strip out blank values that we don't want to send to splice
-    rcs_mkt_usage = filter(None, rcs_mkt_usage)
+    mpu_list = filter(None, mpu_list)
 
     # enrich with product usage info
 
     kps = KatelloPushSync(katello_client=KatelloConnection(), num_threads=CONFIG.getint('main', 'num_threads'))
-    enriched_rmu = kps.enrich_rmu(rcs_mkt_usage)
+    enriched_mpu = kps.enrich_mpu(mpu_list)
     _LOG.info("uploading to splice...")
-    sps.upload_to_rcs(mpu_data=sps.build_rcs_data(rcs_mkt_usage), sample_json=options.sample_json)
+    sps.upload_to_rcs(mpu_data=sps.build_rcs_data(enriched_mpu), sample_json=options.sample_json)
     _LOG.info("Upload was successful")
 
 
