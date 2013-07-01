@@ -110,8 +110,11 @@ def spacewalk_sync(options):
     client = SpacewalkClient(CONFIG.get('spacewalk', 'host'),
                              CONFIG.get('spacewalk', 'ssh_key_path'))
     katello_client = KatelloConnection()
+    num_threads = 1
+    if CONFIG.has_option('main', 'num_threads'):
+        num_threads = CONFIG.getint('main', 'num_threads')
     kps = katello_sync.KatelloPushSync(katello_client=katello_client,
-                                       num_threads=CONFIG.getint('main', 'num_threads'))
+                                       num_threads=num_threads)
     dt = transforms.DataTransforms()
     consumers = []
 
