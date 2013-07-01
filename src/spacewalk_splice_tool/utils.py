@@ -20,6 +20,14 @@ from threading import Thread
 
 _LOG = logging.getLogger(__name__)
 
+
+# Defaults are applied to each section in the config file.
+DEFAULTS = {
+                'num_threads': '1'
+           }
+
+
+
 def system_exit(errcode, message=None):
     if message:
         sys.stderr.write(str(message) + '\n')
@@ -42,7 +50,7 @@ def cfg_init(config_file=None, reinit=False):
     CONFIG = None
     if CONFIG and not reinit:
         return CONFIG
-    CONFIG = SafeConfigParser()
+    CONFIG = SafeConfigParser(defaults=DEFAULTS)
     CONFIG.read(config_file)
     return CONFIG
 
