@@ -14,6 +14,7 @@
 import logging
 import tempfile
 from spacewalk_splice_tool import utils
+from spacewalk_splice_tool import transforms
 
 _LOG = logging.getLogger(__name__)
 
@@ -30,18 +31,18 @@ class KatelloPushSync:
         self.num_threads = num_threads
 
 
-#    def enrich_rmu(self, rcs_mkt_usage):
-#
-#        print rcs_mkt_usage
-#        rmu_instance_id_map = []
-#        for rmu in rcs_mkt_usage:
-#            rmu_instance_id_map[rmu['instance_identifier']] = rmu
-#
-#        entitlements = utils.queued_work(self.katello_client.get_entitlements, rmu_instance_id_map.keys(), self.num_threads)
-#
-#        print entitlements
-#
-#        #return enriched_rmu
+    def enrich_rmu(self, rcs_mkt_usage):
+
+        dt = transforms.DataTransforms()
+        def _rmu_enrich_worker(rmu):
+            rmu.update({'product_info':
+                        dt.transform_entitlements_to_rcs(self.katello_client.get_entitlements(rmu['instance_identifier']))})
+            return rmu
+
+
+        enriched_rmu = utils.queued_work(_rmu_enrich_worker, rcs_mkt_usage, self.num_threads)
+
+        return enriched_rmu
 
     def update_owners(self, orgs):
         """
