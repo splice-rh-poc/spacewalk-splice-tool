@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.26
+Version:        0.27
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -71,6 +71,16 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Tue Jul 02 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- remove dep to smmd, which is not always available (cduryee@redhat.com)
+- rename rmu to mpu, to avoid confusion (cduryee@redhat.com)
+- make SafeConfigParser handle config defaults (cduryee@redhat.com)
+- use multithread for enriching RMU (cduryee@redhat.com)
+- break queued worker out into something that others can use
+  (cduryee@redhat.com)
+- checkin.py: support old configs without num_threads option set
+  (vitty@redhat.com)
+
 * Fri Jun 28 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - multiple small fixups (cduryee@redhat.com)
 - updates to checkin.conf (cduryee@redhat.com)
