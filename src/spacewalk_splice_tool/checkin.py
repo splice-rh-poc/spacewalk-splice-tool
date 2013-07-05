@@ -107,22 +107,28 @@ def spacewalk_sync(options):
     """
     Performs the data capture, translation and checkin to katello
     """
-    _LOG.info("Started capturing system data from spacewalk")
-    client = SpacewalkClient(CONFIG.get('spacewalk', 'host'),
-                             CONFIG.get('spacewalk', 'ssh_key_path'))
+
+    dt = transforms.DataTransforms()
+    consumers = []
     katello_client = KatelloConnection()
     kps = katello_sync.KatelloPushSync(katello_client=katello_client,
                                        num_threads=CONFIG.getint('main', 'num_threads'))
-    dt = transforms.DataTransforms()
-    consumers = []
+
+    _LOG.info("Started capturing system data from spacewalk")
+    if not options.report_input:
+        client = SpacewalkClient(host=CONFIG.get('spacewalk', 'host'),
+                                 ssh_key=CONFIG.get('spacewalk', 'ssh_key_path'))
+    else:
+        client = SpacewalkClient(local_dir=options.report_input)
 
     _LOG.info("retrieving data from spacewalk")
     sw_user_list = client.get_user_list()
     system_details = client.get_system_list()
     channel_details = client.get_channel_list()
     hosts_guests = client.get_host_guest_list()
-    update_system_channel(system_details, channel_details)
     org_list = client.get_org_list()
+
+    update_system_channel(system_details, channel_details)
 
     kps.update_owners(org_list)
     kps.update_users(sw_user_list)

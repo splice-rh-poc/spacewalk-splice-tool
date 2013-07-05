@@ -114,15 +114,14 @@ class KatelloConnection():
         # there are four calls here! we need to work with katello to send all this stuff up at once
         consumer = self.systemapi.register(name=name, org='satellite-' + owner, environment_id=None,
                                            facts=facts, activation_keys=None, cp_type='system',
-                                           installed_products=installed_products)
+                                           installed_products=installed_products, last_checkin=self._convert_date(last_checkin).isoformat())
 
         #TODO: get rid of this extra call!
         facts = consumer['facts']
         if 'virt.is_guest' in facts:
             facts['virt.uuid'] = consumer['uuid']
-            self.updateConsumer(name=consumer['name'], cp_uuid=consumer['uuid'], facts=facts)
+            self.update_consumer(name=consumer['name'], cp_uuid=consumer['uuid'], facts=facts)
 
-        self.systemapi.checkin(consumer['uuid'], self._convert_date(last_checkin))
         self.systemapi.refresh_subscriptions(consumer['uuid'])
 
         self.infoapi.add_custom_info(informable_type='system', informable_id=consumer['id'],
@@ -149,12 +148,10 @@ class KatelloConnection():
             params['releaseVer'] = release
         if service_level is not None:
             params['serviceLevel'] = service_level
-
-        # three rest calls, just one would be better
-        self.systemapi.update(cp_uuid, params)
         if last_checkin is not None:
-            self.systemapi.checkin(cp_uuid, self._convert_date(last_checkin))
-        self.systemapi.refresh_subscriptions(cp_uuid)
+            params['lastCheckin'] = self._convert_date(last_checkin).isoformat()
+
+        self.systemapi.update(cp_uuid, params)
 
     def get_consumers(self, owner=None, with_details=True):
         # TODO: this has a lot of logic and could be refactored into katello_sync

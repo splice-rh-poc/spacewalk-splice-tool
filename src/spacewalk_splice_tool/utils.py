@@ -56,7 +56,13 @@ def get_release():
     f = open('/etc/redhat-release')
     lines = f.readlines()
     f.close()
-    release = "RHEL-" + str(lines).split(' ')[6].split('.')[0]
+    # TODO: make this more robust
+    try:
+        # rhel
+        release = "RHEL-" + str(lines).split(' ')[6].split('.')[0]
+    except IndexError:
+        # centos
+        release = "RHEL-" + str(lines).split(' ')[2].split('.')[0]
     return release
 
 
