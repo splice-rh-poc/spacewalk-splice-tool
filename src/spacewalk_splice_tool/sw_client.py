@@ -25,6 +25,9 @@ _LOG = logging.getLogger(__name__)
 class SpacewalkClient(object):
 
     def __init__(self, host=None, ssh_key_path=None, local_dir=None):
+
+        if not ssh_key_path and not local_dir:
+            raise Exception("neither ssh key path or local dir were defined, aborting")
         self.host = host
         self.ssh_key_path = ssh_key_path
         self.local_dir = local_dir
