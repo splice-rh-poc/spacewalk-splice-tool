@@ -126,6 +126,7 @@ class KatelloConnection():
             facts['virt.uuid'] = consumer['uuid']
             self.update_consumer(name=consumer['name'], cp_uuid=consumer['uuid'], facts=facts)
 
+        self.systemapi.checkin(consumer['uuid'], self._convert_date(last_checkin))
         self.systemapi.refresh_subscriptions(consumer['uuid'])
 
         return consumer['uuid']
@@ -152,6 +153,7 @@ class KatelloConnection():
         if last_checkin is not None:
             params['lastCheckin'] = self._convert_date(last_checkin).isoformat()
 
+        self.systemapi.checkin(cp_uuid, self._convert_date(last_checkin))
         self.systemapi.update(cp_uuid, params)
 
     def get_consumers(self, owner=None, with_details=True):
