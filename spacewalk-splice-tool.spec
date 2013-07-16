@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.32
+Version:        0.33
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,10 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Tue Jul 16 2013 John Matthews <jwmatthews@gmail.com> 0.33-1
+- 983683 - spacewalk-splice-tool has no dependency on subscription-manager-
+  migration-data (jwmatthews@gmail.com)
+
 * Tue Jul 16 2013 John Matthews <jwmatthews@gmail.com> 0.32-1
 - 978390 - splice config files should be protected (jwmatthews@gmail.com)
 
