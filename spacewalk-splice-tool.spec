@@ -8,6 +8,8 @@ Group:          Development/Languages
 License:        GPLv2+
 URL:        https://github.com/splice/spacewalk-splice-tool
 Source0:        %{name}-%{version}.tar.gz
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildArch:      noarch
 
 BuildRequires:  python-setuptools
 BuildRequires:  python2-devel
