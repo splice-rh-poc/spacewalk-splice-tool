@@ -67,7 +67,7 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %attr(755,root,root) %{_bindir}/spacewalk-splice-checkin
 %{python_sitelib}/spacewalk_splice_tool*
-%config(noreplace) %{_sysconfdir}/splice/checkin.conf
+%attr(0640, root, splice) %config(noreplace) %{_sysconfdir}/splice/checkin.conf
 %config(noreplace) %attr(644,root,root) %{_sysconfdir}/cron.d/spacewalk-sst-sync
 %config(noreplace) %attr(644,root,root) %{_sysconfdir}/cron.d/splice-sst-sync
 %doc LICENSE
