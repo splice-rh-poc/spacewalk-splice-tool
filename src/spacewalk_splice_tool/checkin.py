@@ -71,6 +71,7 @@ def get_katello_consumers():
     katello_conn = KatelloConnection()
     return katello_conn.get_consumers()
 
+
 def get_katello_deletions():
     katello_conn = KatelloConnection()
     return katello_conn.get_deleted_systems()
@@ -176,9 +177,7 @@ def splice_sync(options):
     # strip out blank values that we don't want to send to splice
     mpu_list = filter(None, mpu_list)
 
-
     # enrich with product usage info
-
     kps = KatelloPushSync(katello_client=KatelloConnection(), num_threads=CONFIG.getint('main', 'num_threads'))
     enriched_mpu = kps.enrich_mpu(mpu_list)
 

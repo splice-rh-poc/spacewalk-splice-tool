@@ -99,6 +99,7 @@ class CheckinTest(SpliceToolTest):
         mocked_cp_client = Mock()
         mocked_cp_client_class.return_value = mocked_cp_client
         mocked_cp_client.get_consumers.return_value = consumer_list
+        mocked_cp_client.get_deleted_systems.return_value = []
 
         mocked_sc_client_class = self.mock(
             checkin.splice_push, 'BaseConnection')

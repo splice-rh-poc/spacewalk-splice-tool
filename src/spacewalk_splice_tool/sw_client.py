@@ -17,7 +17,6 @@ import logging
 import subprocess
 import sys
 import os
-import codecs
 
 _LOG = logging.getLogger(__name__)
 
