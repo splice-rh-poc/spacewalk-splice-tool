@@ -31,6 +31,25 @@ class DataTransforms:
         global CONFIG
         CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
 
+    def transform_deletions_to_rcs(self, splice_server_uuid, deletion_records):
+        """
+        convert deletion records to MPUs
+        """
+
+        print deletion_records
+        mpu_list = []
+        for deletion_record in deletion_records:
+            mpu = {}
+            mpu['splice_server'] = splice_server_uuid
+            mpu['checkin_date'] = deletion_record['created']
+            mpu['instance_identifier'] = deletion_record['consumerUuid']
+            mpu['organization_id'] = deletion_record['ownerKey']
+            mpu['organization_name'] = deletion_record['ownerDisplayName']
+            mpu['deleted'] = True
+            mpu_list.append(mpu)
+
+        return mpu_list
+
     def transform_to_rcs(self, consumer, splice_server_uuid):
         """
         convert a katello consumer into something parsable by RCS
@@ -46,7 +65,7 @@ class DataTransforms:
             retval['hostname'] = consumer['facts']['network.hostname']
             retval['instance_identifier'] = consumer['uuid']
             retval['entitlement_status'] = consumer['entitlement_status']
-            retval['organization_id'] = str(consumer['environment']['organization_id'])
+            retval['organization_id'] = consumer['owner']['key']
             retval['organization_name'] = consumer['owner']['displayName']
             retval['facts'] = self.transform_facts_to_rcs(consumer['facts'])
             return retval

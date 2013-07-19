@@ -231,6 +231,9 @@ class KatelloConnection():
         admin_role = self.rolesapi.role_by_name(name="Administrator")
         self.userapi.unassign_role(user_id=kt_user['id'], role_id=admin_role['id'])
 
+    def get_deleted_systems(self):
+        return self.systemapi.get_deleted_consumers()
+
     def _convert_date(self, dt):
         retval = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return retval

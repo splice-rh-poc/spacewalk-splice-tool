@@ -71,6 +71,10 @@ def get_katello_consumers():
     katello_conn = KatelloConnection()
     return katello_conn.get_consumers()
 
+def get_katello_deletions():
+    katello_conn = KatelloConnection()
+    return katello_conn.get_deleted_systems()
+
 
 def get_katello_entitlements(uuid):
     katello_conn = KatelloConnection()
@@ -172,10 +176,16 @@ def splice_sync(options):
     # strip out blank values that we don't want to send to splice
     mpu_list = filter(None, mpu_list)
 
+
     # enrich with product usage info
 
     kps = KatelloPushSync(katello_client=KatelloConnection(), num_threads=CONFIG.getint('main', 'num_threads'))
     enriched_mpu = kps.enrich_mpu(mpu_list)
+
+    _LOG.info("fetching deleted systems...")
+    deletion_mpus = dt.transform_deletions_to_rcs(sps.get_splice_server_uuid(), get_katello_deletions())
+    for deletion_mpu in deletion_mpus:
+        enriched_mpu.append(deletion_mpu)
     _LOG.info("uploading to splice...")
     sps.upload_to_rcs(mpu_data=sps.build_rcs_data(enriched_mpu), sample_json=options.sample_json)
     _LOG.info("Upload was successful")
