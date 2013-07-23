@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.33
+Version:        0.34
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,12 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Tue Jul 23 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- change organization_id to organization_label, and send lastCheckin up with
+  consumer update again (cduryee@redhat.com)
+- sync deletions, and change organization_id in MPU to org label
+  (cduryee@redhat.com)
+
 * Tue Jul 16 2013 John Matthews <jwmatthews@gmail.com> 0.33-1
 - 983683 - spacewalk-splice-tool has no dependency on subscription-manager-
   migration-data (jwmatthews@gmail.com)
