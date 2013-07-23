@@ -43,7 +43,7 @@ class DataTransforms:
             mpu['splice_server'] = splice_server_uuid
             mpu['checkin_date'] = deletion_record['created']
             mpu['instance_identifier'] = deletion_record['consumerUuid']
-            mpu['organization_id'] = deletion_record['ownerKey']
+            mpu['organization_label'] = deletion_record['ownerKey']
             mpu['organization_name'] = deletion_record['ownerDisplayName']
             mpu['deleted'] = True
             mpu_list.append(mpu)
@@ -65,7 +65,7 @@ class DataTransforms:
             retval['hostname'] = consumer['facts']['network.hostname']
             retval['instance_identifier'] = consumer['uuid']
             retval['entitlement_status'] = consumer['entitlement_status']
-            retval['organization_id'] = consumer['owner']['key']
+            retval['organization_label'] = consumer['owner']['key']
             retval['organization_name'] = consumer['owner']['displayName']
             retval['facts'] = self.transform_facts_to_rcs(consumer['facts'])
             return retval
