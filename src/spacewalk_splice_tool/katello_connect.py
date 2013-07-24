@@ -160,9 +160,26 @@ class KatelloConnection():
 
         # the API wants "orgId" but they mean "label"
         org_ids = map(lambda x: x['label'], self.orgapi.organizations())
+        # some katello-specific query params for pagination
+        query_params = {'paged': 'true',
+                        'sort_by': 'name',
+                        'offset': 0, #this gets set again later, just putting it here for clarity
+                        'sort_order': 'ASC'}
         consumer_list = []
         for org_id in org_ids:
-            consumer_list.append(self.systemapi.systems_by_org(orgId=org_id))
+            # we need to grab the system list in sets of 25 so we don't time out on especially large queries
+            # XXX: there might be a better way to write this loop
+            query_params['offset'] = 0
+            while True:
+                _LOG.debug("retrieving systems for org %s, offset %s" % (org_id, query_params['offset']))
+                system_subset = self.systemapi.systems_by_org(orgId=org_id, query=query_params)['systems']
+                _LOG.debug("found %s systems" % len(system_subset))
+                consumer_list.append(system_subset)
+                # if we didn't get 25 results, stop here
+                if len(system_subset) < 25:
+                    break
+                query_params['offset'] += 25
+
 
         # flatten the list
         consumer_list = list(itertools.chain.from_iterable(consumer_list))
