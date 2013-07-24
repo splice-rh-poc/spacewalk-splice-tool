@@ -188,6 +188,7 @@ system_list = [{'memory': '7466',
                 'organization': 'Red Hat (Internal Use Only)', 
                 'ip_address': '10.96.161.145', 
                 'virtual_host': '1000010002', 
+                'is_virtualized': 'Yes', 
                 'sockets': '1'}, 
                {'memory': '7466', 
                 'server_id': '1000010002', 
@@ -206,6 +207,7 @@ system_list = [{'memory': '7466',
                 'entitlements': 'Spacewalk Management Entitled Servers', 
                 'organization': 'Red Hat (Internal Use Only)', 
                 'ip_address': '10.96.161.145', 
+                'is_virtualized': 'No', 
                 'sockets': '1'}
               ]
 

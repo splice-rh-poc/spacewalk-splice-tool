@@ -108,7 +108,7 @@ def network_facts(nwkinfo):
 
 def guest_facts(guestinfo):
     guest_facts_dict = dict()
-    if 'virtual_host' in guestinfo and guestinfo['virtual_host'] is not "":
+    if 'is_virtualized' in guestinfo and guestinfo['is_virtualized'] == 'Yes':
         guest_facts_dict['virt.is_guest'] = True
         guest_facts_dict['virt.host_type'] = 'Unknown'
     return guest_facts_dict
