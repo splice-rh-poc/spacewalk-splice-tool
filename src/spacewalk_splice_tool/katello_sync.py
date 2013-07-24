@@ -259,3 +259,13 @@ class KatelloPushSync:
         Uploads consumer data to katello
         """
         utils.queued_work(self._upload_consumer_to_katello, consumers, self.num_threads)
+
+    def autoentitle_satellite_orgs(self):
+        """
+        performs an autoentitle on all orgs that map to satellite orgs
+        """
+        owner_list = self.katello_client.get_owners()
+        for owner in owner_list:
+            # only do this for satellite orgs
+            if owner['label'].count(SAT_OWNER_PREFIX) == 1:
+                self.katello_client.refresh_subs(org_label=owner['label'])

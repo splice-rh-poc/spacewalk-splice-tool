@@ -157,6 +157,8 @@ def spacewalk_sync(options):
     katello_consumer_list = katello_client.get_consumers(with_details=False)
     kps.upload_host_guest_mapping(hosts_guests, katello_consumer_list)
     _LOG.info("guest upload completed")
+    _LOG.info("starting async auto-attach on satellite orgs")
+    kps.autoentitle_satellite_orgs()
 
 
 def splice_sync(options):

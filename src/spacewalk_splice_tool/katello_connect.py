@@ -47,6 +47,10 @@ class KatelloConnection():
     def get_owners(self):
         return self.orgapi.organizations()
 
+    def refresh_subs(self, org_label):
+        _LOG.debug("entering async task to refresh systems in %s" % org_label)
+        return self.orgapi.attach_all_systems(org_label)
+
     def create_distributor(self, name, root_org):
         return self.distributorapi.create(name=name, org=root_org, environment_id=None)
 
@@ -157,13 +161,12 @@ class KatelloConnection():
 
     def get_consumers(self, owner=None, with_details=True):
         # TODO: this has a lot of logic and could be refactored into katello_sync
-
         # the API wants "orgId" but they mean "label"
         org_ids = map(lambda x: x['label'], self.orgapi.organizations())
         # some katello-specific query params for pagination
         query_params = {'paged': 'true',
                         'sort_by': 'name',
-                        'offset': 0, #this gets set again later, just putting it here for clarity
+                        'offset': 0,
                         'sort_order': 'ASC'}
         consumer_list = []
         for org_id in org_ids:
@@ -179,7 +182,6 @@ class KatelloConnection():
                 if len(system_subset) < 25:
                     break
                 query_params['offset'] += 25
-
 
         # flatten the list
         consumer_list = list(itertools.chain.from_iterable(consumer_list))
