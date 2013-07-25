@@ -122,7 +122,8 @@ def spacewalk_sync(options):
     _LOG.info("Started capturing system data from spacewalk")
     if not options.report_input:
         client = SpacewalkClient(host=CONFIG.get('spacewalk', 'host'),
-                                 ssh_key_path=CONFIG.get('spacewalk', 'ssh_key_path'))
+                                 ssh_key_path=CONFIG.get('spacewalk', 'ssh_key_path'),
+                                 login=CONFIG.get('spacewalk', 'login'))
     else:
         client = SpacewalkClient(local_dir=options.report_input)
 
