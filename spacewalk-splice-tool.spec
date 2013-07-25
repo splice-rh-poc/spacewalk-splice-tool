@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.36
+Version:        0.37
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,9 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Thu Jul 25 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- remove deletion record removal (cduryee@redhat.com)
+
 * Thu Jul 25 2013 John Matthews <jwmatthews@gmail.com> 0.36-1
 - Update path to splice_ca (jwmatthews@gmail.com)
 - autoentitle systems via async task after updates (cduryee@redhat.com)
