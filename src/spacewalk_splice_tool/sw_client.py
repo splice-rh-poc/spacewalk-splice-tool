@@ -23,19 +23,20 @@ _LOG = logging.getLogger(__name__)
 
 class SpacewalkClient(object):
 
-    def __init__(self, host=None, ssh_key_path=None, local_dir=None):
+    def __init__(self, host=None, ssh_key_path=None, local_dir=None, login='swreport'):
 
         if not ssh_key_path and not local_dir:
             raise Exception("neither ssh key path or local dir were defined, aborting")
         self.host = host
         self.ssh_key_path = ssh_key_path
+        self.login = login
         self.local_dir = local_dir
 
     def _get_report(self, report_path):
 
         if self.host and self.ssh_key_path:
             # capture data from spacewalk
-            process = subprocess.Popen(['/usr/bin/ssh', '-i', self.ssh_key_path, '-l', 'root', self.host, report_path],
+            process = subprocess.Popen(['/usr/bin/ssh', '-i', self.ssh_key_path, '-l', self.login, self.host, report_path],
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             ssh_stdout, ssh_stderr = process.communicate()
 
