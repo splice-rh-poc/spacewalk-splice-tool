@@ -211,8 +211,6 @@ class KatelloConnection():
 
     def delete_consumer(self, consumer_uuid):
         self.systemapi.unregister(consumer_uuid)
-        # XXX: only for dev use
-        self.systemapi.remove_consumer_deletion_record(consumer_uuid)
 
     def get_roles(self, user_id=None):
         if user_id:
