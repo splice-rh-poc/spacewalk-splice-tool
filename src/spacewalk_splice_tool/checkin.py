@@ -62,7 +62,7 @@ def get_product_ids(subscribedchannels):
     # reformat to how candlepin expects the product id list
     installed_products = []
     for p in product_ids:
-        product_cert = CERT_DIR.find_by_product(str(p))
+        product_cert = CERT_DIR.findByProduct(str(p))
         installed_products.append({"productId": product_cert.products[0].id, "productName": product_cert.products[0].name})
     return installed_products
 

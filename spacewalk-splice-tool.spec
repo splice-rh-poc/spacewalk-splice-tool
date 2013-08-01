@@ -19,7 +19,7 @@ Requires: python-oauth2
 Requires: splice-common >= 0.77
 Requires: /usr/sbin/crond
 Requires: katello-cli
-Requires: subscription-manager >= 1.8.11
+Requires: subscription-manager
 Requires: subscription-manager-migration-data >= 2.0.1
 
 %description
