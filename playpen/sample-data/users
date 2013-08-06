@@ -1,0 +1,4 @@
+organization_id,organization,user_id,username,last_name,first_name,position,email,role,creation_time,last_login_time,active
+1,Org One,1,admin,Red,Hat,,admin@foo.org,Satellite Administrator;Organization Administrator,2006-12-22 15:20:16,2013-06-05 20:34:07,enabled
+1,Org One,2,user_one,Red,Hat,,user_one@foo.org,Organization Administrator,2006-12-22 15:20:16,2013-06-05 20:34:07,enabled
+2,Org Two,3,user_two,User,Two,,user_two@foo.org,,2006-12-24 12:50:31,2013-04-11 15:33:35,enabled

@@ -169,9 +169,9 @@ class KatelloConnection():
                         'offset': 0,
                         'sort_order': 'ASC'}
         consumer_list = []
+        # TODO: this could be done in parallel
         for org_id in org_ids:
             # we need to grab the system list in sets of 25 so we don't time out on especially large queries
-            # XXX: there might be a better way to write this loop
             query_params['offset'] = 0
             while True:
                 _LOG.debug("retrieving systems for org %s, offset %s" % (org_id, query_params['offset']))
