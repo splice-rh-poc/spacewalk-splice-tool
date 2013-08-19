@@ -36,7 +36,6 @@ class DataTransforms:
         convert deletion records to MPUs
         """
 
-        print deletion_records
         mpu_list = []
         for deletion_record in deletion_records:
             mpu = {}
