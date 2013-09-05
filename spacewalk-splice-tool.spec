@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.40
+Version:        0.41
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,10 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Thu Sep 05 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- 1004335: abort with error if org names have '<>/' in them
+  (cduryee@redhat.com)
+
 * Tue Aug 20 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - remove debug print (vitty@redhat.com)
 
