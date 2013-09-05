@@ -41,8 +41,8 @@ def get_product_ids(subscribedchannels):
     """
     For the subscribed base and child channels look up product ids
     """
+    global CERT_DIR
     if CERT_DIR is None:
-        global CERT_DIR
         CERT_DIR = CertificateDirectory(CERT_DIR_PATH)
 
     mapping_file = os.path.join(
@@ -107,6 +107,22 @@ def update_system_channel(systems, channels):
         system['software_channel'] = channel_map.get(system['software_channel'],
                                                      system['software_channel'])
 
+def check_for_invalid_org_names(org_list):
+    # katello is more strict than spacewalk in which org names and role names it allows.
+    is_valid = True
+    for org in org_list.values():
+        if org.count('/') > 0:
+            _LOG.error("org names may not contain '/' character: %s" % org)
+            is_valid = False
+        if org.count('<') > 0:
+            _LOG.error("org names may not contain '<' character: %s" % org)
+            is_valid = False
+        if org.count('>') > 0:
+            _LOG.error("org names may not contain '>' character: %s" % org)
+            is_valid = False
+
+    return is_valid
+
 
 def spacewalk_sync(options):
     """
@@ -133,6 +149,9 @@ def spacewalk_sync(options):
     channel_details = client.get_channel_list()
     hosts_guests = client.get_host_guest_list()
     org_list = client.get_org_list()
+
+    if not check_for_invalid_org_names(org_list):
+        raise Exception("Invalid org names found. Check /var/log/splice/spacewalk_splice_tool.log for more detail.")
 
     update_system_channel(system_details, channel_details)
 
