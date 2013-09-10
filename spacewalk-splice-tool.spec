@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.42
+Version:        0.43
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,9 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Tue Sep 10 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- 1004954: reduce default thread count (cduryee@redhat.com)
+
 * Fri Sep 06 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - 1004954: reduce default thread count (cduryee@redhat.com)
 
