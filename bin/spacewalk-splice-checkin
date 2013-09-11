@@ -21,6 +21,9 @@ import sys
 from optparse import OptionParser
 from spacewalk_splice_tool import checkin, utils, constants
 
+# Import splice log handlers
+from splice.common import log_handlers
+
 CONFIG = utils.cfg_init(config_file=constants.SPLICE_CHECKIN_CONFIG)
 
 def init_logging():
