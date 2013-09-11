@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.44
+Version:        0.45
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,9 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Wed Sep 11 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- 1007072: convert EM64T to x86_64 (cduryee@redhat.com)
+
 * Wed Sep 11 2013 John Matthews <jwmatthews@gmail.com> 0.44-1
 - 1006593 - splice log rolling sets incorrect permissions
   (jwmatthews@gmail.com)
