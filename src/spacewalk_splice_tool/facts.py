@@ -44,12 +44,17 @@ def cpu_facts(cpuinfo):
     if "hardware" in cpuinfo and len(cpuinfo['hardware']) > 0:
         cpu_count = cpuinfo['hardware'].split(';')[0].split()[0]
 
+    # convert "EM64T" to "x86_64" (sometimes reported by rhel4 up2date)
+    cpu_arch = cpuinfo['architecture']
+    if cpu_arch == 'EM64T':
+        cpu_arch = 'x86_64'
+
     cpu_facts_dict = dict()
 
     # rules.js depends on uname.machine, not lscpu
-    cpu_facts_dict['uname.machine'] = cpuinfo['architecture']
+    cpu_facts_dict['uname.machine'] = cpu_arch
     cpu_facts_dict['lscpu.l1d_cache'] = ""
-    cpu_facts_dict['lscpu.architecture'] = cpuinfo['architecture']
+    cpu_facts_dict['lscpu.architecture'] = cpu_arch
     cpu_facts_dict['lscpu.stepping'] = ""
     cpu_facts_dict['lscpu.cpu_mhz'] = ""
     cpu_facts_dict['lscpu.vendor_id'] = ""
