@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.45
+Version:        0.46
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,9 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Tue Sep 17 2013 Chris Duryee (beav) <cduryee@redhat.com>
+- 1009035: convert some rhel4 arches to known arch values (cduryee@redhat.com)
+
 * Wed Sep 11 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - 1007072: convert EM64T to x86_64 (cduryee@redhat.com)
 
