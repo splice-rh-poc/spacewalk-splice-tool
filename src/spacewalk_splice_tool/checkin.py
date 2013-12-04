@@ -107,6 +107,7 @@ def update_system_channel(systems, channels):
         system['software_channel'] = channel_map.get(system['software_channel'],
                                                      system['software_channel'])
 
+
 def check_for_invalid_org_names(org_list):
     # katello is more strict than spacewalk in which org names and role names it allows.
     is_valid = True

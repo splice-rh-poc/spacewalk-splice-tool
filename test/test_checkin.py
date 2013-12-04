@@ -66,6 +66,18 @@ class CheckinTest(SpliceToolTest):
         mocked_cp_client = Mock()
         mocked_cp_client_class.return_value = mocked_cp_client
 
+        mocked_certdir_class = self.mock(checkin, 'CertificateDirectory')
+        mocked_certdir = Mock()
+
+        mock_products = Mock()
+        mock_products.products = Mock()
+        mock_product = Mock()
+        mock_product.id = 123
+        mock_product.name = 'some product'
+        mock_products.products = [mock_product]
+        mocked_certdir.findByProduct.return_value = mock_products
+        mocked_certdir_class.return_value = mocked_certdir
+
         mocked_sw_client.get_user_list.return_value = user_list
         mocked_sw_client.get_system_list.return_value = system_list
         mocked_sw_client.get_channel_list.return_value = channel_list
