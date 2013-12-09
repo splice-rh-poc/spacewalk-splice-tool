@@ -184,7 +184,7 @@ def spacewalk_sync(options):
         spacewalk_details = _pull_spacewalk_data(client)
         kps.update_owners(spacewalk_details['org_list'], client.prefix)
 
-        # do we care about this?
+        # TODO: do we care about this? might not be needed
         #kps.update_users(spacewalk_details['sw_user_list'])
         #kps.update_roles(spacewalk_details['sw_user_list'])
 
@@ -196,7 +196,7 @@ def spacewalk_sync(options):
         prefixed_katello_consumers = filter(_find_prefixed_consumer, katello_consumer_list)
 
         _LOG.info("found %s prefixed consumers" % len(prefixed_katello_consumers))
-        # TODO: need to do something here with prefixes so we don't over-delete
+
         kps.delete_stale_consumers(prefixed_katello_consumers, spacewalk_details['system_details'])
 
         # convert the system details to katello consumers

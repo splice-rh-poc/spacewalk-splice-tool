@@ -76,7 +76,17 @@ class SpacewalkClient(object):
         return system_list
 
     def get_host_guest_list(self):
-        return self._get_report('host-guests')
+        hosts_guests = self._get_report('host-guests')
+        for hg in hosts_guests:
+            hg['server_id'] = self.prefix + hg['server_id']
+
+            # break guests IDs apart, prefix, and put back together
+            prefixed_guests = []
+            for g in hg['guests'].split(';'):
+                prefixed_guests.append(self.prefix + g)
+            hg['guests'] = ';'.join(prefixed_guests)
+
+        return hosts_guests
 
     def get_channel_list(self):
         return self._get_report('cloned-channels')
