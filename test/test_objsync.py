@@ -43,6 +43,14 @@ class TestObjectSync(SpliceToolTest):
                    {'name': 'foo org', 'label': 'NOT-A-SAT-ORG', 'id': '100', 'description': 'no description'},
                   ]
 
+        cp_orgs_multisat = [
+                   {'name': 'bar org (qa satellite)', 'label': 'satellite-qa-2',   'id': '9',   'description': 'no description'},
+                   {'name': 'foo org (qa satellite)', 'label': 'satellite-qa-1',   'id': '7',   'description': 'no description'},
+                   {'name': 'bar org (dev satellite)', 'label': 'satellite-dev-2',   'id': '11',   'description': 'no description'},
+                   {'name': 'foo org (dev satellite)', 'label': 'satellite-dev-1',   'id': '12',   'description': 'no description'},
+                   {'name': 'foo org', 'label': 'NOT-A-SAT-ORG', 'id': '100', 'description': 'no description'},
+                  ]
+
         kt_userlist = [{'username': 'admin', 'id': 1, 'email': 'admin@foo.com'},
                         {'username': 'bazbaz', 'id': 3, 'email': 'bazbaz@foo.com'},
                         {'username': 'foo', 'id': 2, 'email': 'bazbaz@foo.com'}]
@@ -76,10 +84,11 @@ class TestObjectSync(SpliceToolTest):
         self.kps = KatelloPushSync(katello_client=self.cp_client, num_threads=1)
 
     def test_owner_add(self):
+        sw_prefix = 'qa'
         sw_orgs = {'1': 'foo', '2': 'bar', '3': 'baz'}
-        self.kps.update_owners(sw_orgs)
+        self.kps.update_owners(sw_orgs, prefix=sw_prefix)
         self.cp_client.create_owner.assert_called_once_with(name='baz', label='satellite-3')
-        self.cp_client.create_distributor.assert_called_once_with(name="Distributor for baz", root_org='satellite-1')
+        self.cp_client.create_distributor.assert_called_once_with(name="Distributor for baz", root_org='satellite-qa1')
         self.cp_client.export_manifest.assert_called_once_with(dist_uuid='100100')
         # TODO: actually check the file contents
         true_matcher = TestObjectSync.Matcher(self.true_compare, "x")
@@ -90,12 +99,12 @@ class TestObjectSync(SpliceToolTest):
     def test_owner_delete(self):
         # owner #2 is missing and should get zapped 
         sw_orgs = {'1': 'foo', '3': 'baz'}
-        self.kps.update_owners(sw_orgs)
+        self.kps.update_owners(sw_orgs, prefix="")
         self.cp_client.delete_owner.assert_called_once_with(name='bar org')
 
     def test_owner_noop(self):
         sw_orgs = {'1': 'foo', '2': 'bar'}
-        self.kps.update_owners(sw_orgs)
+        self.kps.update_owners(sw_orgs, prefix="")
         assert not self.cp_client.delete_owner.called
         assert not self.cp_client.create_owner.called
 

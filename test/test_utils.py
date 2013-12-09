@@ -34,3 +34,19 @@ class UtilsTest(SpliceToolTest):
             'Red Hat Enterprise Linux Server release 6.4 (Santiago)'
         release = utils.get_release()
         self.assertEquals('RHEL-6', release)
+
+    def test_config(self):
+        # unmock cfg_init, which is mocked in base.py
+        self.unmock(utils, 'cfg_init')
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        self.assertEquals(443, cfg.getint("splice", "port"))
+
+    def test_multisw_config(self):
+        # test first with mocked config (single spacewalk)
+        cfg = utils.cfg_init()
+        self.assertEquals(['spacewalk'], utils.get_multi_sw_cfg(cfg))
+
+        # unmock cfg_init, which is mocked in base.py
+        self.unmock(utils, 'cfg_init')
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        self.assertEquals(['spacewalk_foo', 'spacewalk_bar'], utils.get_multi_sw_cfg(cfg))

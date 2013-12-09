@@ -64,7 +64,8 @@ class SpliceToolTest(unittest.TestCase):
         self.old_config = checkin.CONFIG
         
         defaults = {'spacewalk': {'host': 'spacewalkhost',
-                                  'ssh_key_path': 'spacwealk_ssh_key_path'},
+                                  'ssh_key_path': 'spacewalk_ssh_key_path',
+                                  'login': 'swreport'},
                     'main': {'socket_timeout': '300', 'num_threads': '4'},
                     'splice': {'hostname': 'test_hostname',
                                'port': '8888',

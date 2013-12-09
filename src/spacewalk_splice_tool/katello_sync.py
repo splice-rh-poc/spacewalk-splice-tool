@@ -42,7 +42,7 @@ class KatelloPushSync:
         enriched_mpu = utils.queued_work(_mpu_enrich_worker, marketing_product_usage, self.num_threads)
         return enriched_mpu
 
-    def update_owners(self, orgs):
+    def update_owners(self, orgs, prefix):
         """
         ensure that the katello owner set matches what's in spacewalk
         """
@@ -56,6 +56,9 @@ class KatelloPushSync:
             owner_label_map[owner['label']] = owner
         owner_labels = owner_label_map.keys()
         _LOG.debug("owner label list from katello: %s" % owner_labels)
+
+        #TODO: string needs a dash for readability
+        root_org = "satellite-%s1" % prefix
 
         for org_id in org_ids:
             katello_label = SAT_OWNER_PREFIX + org_id
@@ -71,7 +74,7 @@ class KatelloPushSync:
                               (orgs[org_id], org_id))
                     distributor = self.katello_client.create_distributor(
                         name="Distributor for %s" % orgs[org_id],
-                        root_org='satellite-1')
+                        root_org=root_org)
                     manifest_data = self.katello_client.export_manifest(
                         dist_uuid=distributor['uuid'])
                     # katello-cli does some magic that
@@ -94,7 +97,7 @@ class KatelloPushSync:
             elif orgs[org_id] != owner_label_map[katello_label]['name']:
                 self.katello_client.update_owner(owner_label_map[katello_label]['name'], {'name': orgs[org_id]})
                 self.katello_client.update_distributor('Distributor for %s' % owner_label_map[katello_label]['name'],
-                                                       'satellite-1',
+                                                       root_org,
                                                        {'name': 'Distributor for %s' % orgs[org_id]})
                 self.katello_client.update_role('Org Admin Role for %s' % owner_label_map[katello_label]['name'],
                                                 'Org Admin Role for %s' % orgs[org_id])
@@ -109,7 +112,8 @@ class KatelloPushSync:
         # perform deletions
         for owner_label in owner_labels_names.keys():
             # bail out if this isn't an owner we are managing
-            if not owner_label.startswith(SAT_OWNER_PREFIX):
+            print "comparing %s to %s" % (owner_label, SAT_OWNER_PREFIX + prefix)
+            if not owner_label.startswith(SAT_OWNER_PREFIX + prefix):
                 continue
 
             # get the org ID from the katello name
@@ -118,7 +122,7 @@ class KatelloPushSync:
                 _LOG.info("removing owner %s (name: %s) and associated distributor, owner is no longer in spacewalk"
                           % (owner_label, owner_labels_names[owner_label]))
                 self.katello_client.delete_distributor(
-                    name="Distributor for %s" % owner_labels_names[owner_label], root_org='satellite-1')
+                    name="Distributor for %s" % owner_labels_names[owner_label], root_org=root_org)
                 self.katello_client.delete_owner(name=owner_labels_names[owner_label])
 
     def update_users(self, sw_userlist):

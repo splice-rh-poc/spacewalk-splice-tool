@@ -64,8 +64,8 @@ if __name__ == "__main__":
                       help="Only sync from spacewalk")
     parser.add_option('--splice-sync', action='store_true', default=None,
                       help="Only sync to splice")
-    parser.add_option('--report_input', action="store", default=None, metavar="DIR",
-                      help="Specify an optional directory to report data from. "
+    parser.add_option('--report_input', action="append", default=None, metavar="DIR",
+                      help="Specify optional directory/directories to report data from. "
                            "This is used with --spacewalk-sync, to avoid pulling data "
                            "via ssh.")
     (opts, args) = parser.parse_args()

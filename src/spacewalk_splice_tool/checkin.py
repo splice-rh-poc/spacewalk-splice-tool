@@ -125,61 +125,93 @@ def check_for_invalid_org_names(org_list):
     return is_valid
 
 
+#TODO: this should probably live in sw_client
+def _pull_spacewalk_data(client):
+    """
+    return a dict with the info we need from a spacewalk instance (not prefixed yet)
+    """
+
+    _LOG.info("retrieving data from spacewalk %s" % client.prefix)
+
+    return_dict = {}
+    return_dict['sw_user_list'] = client.get_user_list()
+    return_dict['system_details'] = client.get_system_list()
+    return_dict['channel_details'] = client.get_channel_list()
+    return_dict['hosts_guests'] = client.get_host_guest_list()
+    return_dict['org_list'] = client.get_org_list()
+
+    if not check_for_invalid_org_names(return_dict['org_list']):
+        raise Exception("Invalid org names found. Check /var/log/splice/spacewalk_splice_tool.log for more detail.")
+
+    update_system_channel(return_dict['system_details'], return_dict['channel_details'])
+
+    _LOG.info("adding installed products to %s spacewalk records" % len(return_dict['system_details']))
+    # enrich with engineering product IDs
+    map(lambda details:
+        details.update({'installed_products': get_product_ids(details['software_channel'])}), return_dict['system_details'])
+
+    return return_dict
+
+
 def spacewalk_sync(options):
     """
     Performs the data capture, translation and checkin to katello
     """
 
     dt = transforms.DataTransforms()
-    consumers = []
     katello_client = KatelloConnection()
     kps = katello_sync.KatelloPushSync(katello_client=katello_client,
                                        num_threads=CONFIG.getint('main', 'num_threads'))
 
-    _LOG.info("Started capturing system data from spacewalk")
-    if not options.report_input:
-        client = SpacewalkClient(host=CONFIG.get('spacewalk', 'host'),
-                                 ssh_key_path=CONFIG.get('spacewalk', 'ssh_key_path'),
-                                 login=CONFIG.get('spacewalk', 'login'))
+    sw_clients = []
+    if options.report_input:
+        _LOG.info("Started capturing system data from %s local dirs" % len(options.report_input))
+        for report_input in options.report_input:
+            sw_clients.append(SpacewalkClient(local_dir=report_input, prefix=os.path.basename(report_input)))
+
+    # if report_input wasn't defined, read from the conf file
     else:
-        client = SpacewalkClient(local_dir=options.report_input)
+        _LOG.info("Started capturing system data from %s spacewalk(s)" % len(utils.get_multi_sw_cfg(CONFIG)))
+        for sw_section in utils.get_multi_sw_cfg(CONFIG):
+            # the :10 slice is to strip the word "spacewalk_" from the section name to create the prefix
+            sw_clients.append(SpacewalkClient(host=CONFIG.get(sw_section, "host"),
+                                              ssh_key_path=CONFIG.get(sw_section, "ssh_key_path"),
+                                              login=CONFIG.get(sw_section, "login"),
+                                              prefix=sw_section[:10]))
 
-    _LOG.info("retrieving data from spacewalk")
-    sw_user_list = client.get_user_list()
-    system_details = client.get_system_list()
-    channel_details = client.get_channel_list()
-    hosts_guests = client.get_host_guest_list()
-    org_list = client.get_org_list()
+    for client in sw_clients:
+        consumers = []
+        spacewalk_details = _pull_spacewalk_data(client)
+        kps.update_owners(spacewalk_details['org_list'], client.prefix)
 
-    if not check_for_invalid_org_names(org_list):
-        raise Exception("Invalid org names found. Check /var/log/splice/spacewalk_splice_tool.log for more detail.")
+        # do we care about this?
+        #kps.update_users(spacewalk_details['sw_user_list'])
+        #kps.update_roles(spacewalk_details['sw_user_list'])
 
-    update_system_channel(system_details, channel_details)
+        katello_consumer_list = katello_client.get_consumers()
 
-    kps.update_owners(org_list)
-    kps.update_users(sw_user_list)
-    kps.update_roles(sw_user_list)
+        def _find_prefixed_consumer(consumer):
+            return consumer['facts']['systemid'].startswith(client.prefix)
 
-    katello_consumer_list = katello_client.get_consumers()
-    kps.delete_stale_consumers(katello_consumer_list, system_details)
+        prefixed_katello_consumers = filter(_find_prefixed_consumer, katello_consumer_list)
 
-    _LOG.info("adding installed products to %s spacewalk records" % len(system_details))
-    # enrich with engineering product IDs
-    map(lambda details:
-        details.update({'installed_products': get_product_ids(details['software_channel'])}), system_details)
+        _LOG.info("found %s prefixed consumers" % len(prefixed_katello_consumers))
+        # TODO: need to do something here with prefixes so we don't over-delete
+        kps.delete_stale_consumers(prefixed_katello_consumers, spacewalk_details['system_details'])
 
-    # convert the system details to katello consumers
-    consumers.extend(dt.transform_to_consumers(system_details))
-    _LOG.info("found %s systems to upload into katello" % len(consumers))
-    _LOG.info("uploading to katello...")
-    kps.upload_to_katello(consumers)
-    _LOG.info("upload completed. updating with guest info..")
-    # refresh the consumer list. we need the full details here to get at the system ID
-    katello_consumer_list = katello_client.get_consumers(with_details=False)
-    kps.upload_host_guest_mapping(hosts_guests, katello_consumer_list)
-    _LOG.info("guest upload completed")
-    _LOG.info("starting async auto-attach on satellite orgs")
-    kps.autoentitle_satellite_orgs()
+        # convert the system details to katello consumers
+        consumers.extend(dt.transform_to_consumers(spacewalk_details['system_details'], client.prefix))
+
+        _LOG.info("found %s systems to upload into katello" % len(consumers))
+        _LOG.info("uploading to katello...")
+        kps.upload_to_katello(consumers)
+        _LOG.info("upload completed. updating with guest info..")
+        # refresh the consumer list. we need the full details here to get at the system ID
+        katello_consumer_list = katello_client.get_consumers(with_details=False)
+        kps.upload_host_guest_mapping(spacewalk_details['hosts_guests'], katello_consumer_list)
+        _LOG.info("guest upload completed")
+        _LOG.info("starting async auto-attach on satellite orgs")
+        kps.autoentitle_satellite_orgs()
 
 
 def splice_sync(options):

@@ -52,6 +52,12 @@ def cfg_init(config_file=None, reinit=False):
     return CONFIG
 
 
+def get_multi_sw_cfg(cfg):
+    spacewalk_sections = filter(lambda x: x.startswith('spacewalk'),
+                                cfg.sections())
+    return spacewalk_sections
+
+
 def get_release():
     f = open('/etc/redhat-release')
     lines = f.readlines()

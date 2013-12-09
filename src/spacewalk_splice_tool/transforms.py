@@ -14,6 +14,7 @@
 import logging
 
 from spacewalk_splice_tool import facts, utils, constants
+import ConfigParser
 
 _LOG = logging.getLogger(__name__)
 CONFIG = None
@@ -71,7 +72,7 @@ class DataTransforms:
         else:
             _LOG.debug("system entry for %s has no checkin_time, not loading entry into splice db" % consumer['name'])
 
-    def transform_to_consumers(self, system_details):
+    def transform_to_consumers(self, system_details, prefix):
         """
         Convert system details to katello consumers. Note that this is an ersatz
         consumer that gets processed again later, you cannot pass this directly
@@ -83,7 +84,15 @@ class DataTransforms:
             facts_data = facts.translate_sw_facts_to_subsmgr(details)
             # assume 3.1, so large certs can bind to this consumer
             facts_data['system.certificate_version'] = '3.1'
-            facts_data['spacewalk-server-hostname'] = CONFIG.get("spacewalk", "host")
+
+            # TODO: can this be refactored?
+            try:
+                if prefix:
+                    facts_data['spacewalk-server-hostname'] = CONFIG.get("spacewalk_%s" % prefix, "host")
+                else:
+                    facts_data['spacewalk-server-hostname'] = CONFIG.get("spacewalk", "host")
+            except ConfigParser.NoSectionError:
+                _LOG.info("spacewalk server hostname not found for system %s" % details['name'])
 
             consumer = dict()
             consumer['id'] = details['server_id']

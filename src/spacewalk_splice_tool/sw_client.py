@@ -23,7 +23,7 @@ _LOG = logging.getLogger(__name__)
 
 class SpacewalkClient(object):
 
-    def __init__(self, host=None, ssh_key_path=None, local_dir=None, login='swreport'):
+    def __init__(self, host=None, ssh_key_path=None, local_dir=None, login='swreport', prefix=""):
 
         if not ssh_key_path and not local_dir:
             raise Exception("neither ssh key path or local dir were defined, aborting")
@@ -31,6 +31,9 @@ class SpacewalkClient(object):
         self.ssh_key_path = ssh_key_path
         self.login = login
         self.local_dir = local_dir
+
+        # used to prefix org names and such
+        self.prefix = prefix
 
     def _get_report(self, report_path):
 
@@ -64,7 +67,13 @@ class SpacewalkClient(object):
 
     # TODO: these methods have a lot of duplicate code
     def get_system_list(self):
-        return self._get_report('splice-export')
+        system_list = self._get_report('splice-export')
+        for s in system_list:
+            s['server_id'] = self.prefix + s['server_id']
+            s['organization'] = self.prefix + s['organization']
+            s['org_id'] = self.prefix + s['org_id']
+
+        return system_list
 
     def get_host_guest_list(self):
         return self._get_report('host-guests')
@@ -80,7 +89,7 @@ class SpacewalkClient(object):
 
         orgs = {}
         for u in full_user_list:
-            orgs[u['organization_id']] = u['organization']
+            orgs[self.prefix + u['organization_id']] = self.prefix + u['organization']
 
         return orgs
 

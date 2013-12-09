@@ -12,7 +12,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 
-from mock import Mock, patch
+from mock import Mock, patch, call
 import socket
 
 from base import SpliceToolTest
@@ -61,6 +61,7 @@ class CheckinTest(SpliceToolTest):
     def test_spacewalk_sync(self):
         mocked_sw_client_class = self.mock(checkin, 'SpacewalkClient')
         mocked_sw_client = Mock()
+        mocked_sw_client.prefix = ""
         mocked_sw_client_class.return_value = mocked_sw_client
         mocked_cp_client_class = self.mock(checkin, 'KatelloConnection')
         mocked_cp_client = Mock()
@@ -92,10 +93,13 @@ class CheckinTest(SpliceToolTest):
         mocked_cp_client.get_consumers.return_value = consumer_list
         
         options = Mock()
+        options.report_input = None
         delete_stale_consumers = self.mock(katello_sync.KatelloPushSync, 'delete_stale_consumers')
         upload_to_cp = self.mock(katello_sync.KatelloPushSync, 'upload_to_katello')
 
         checkin.spacewalk_sync(options)
+        # single SW, ensure we only initailized one sw client class
+        self.assertEquals(1, mocked_sw_client_class.call_count)
 
         # base channel was set to RH channel
         self.assertEquals('rhel-x86_64-server-6',
@@ -105,6 +109,15 @@ class CheckinTest(SpliceToolTest):
         self.assertTrue(system_list[1].has_key('installed_products'))
         self.assertTrue(upload_to_cp.called)
         self.assertEquals(2, len(upload_to_cp.call_args[0][0]))
+
+        # check that we create two SpacewalkClients for multiple input dirs
+        # TODO: I should be creating a new test here instead of resetting a mock
+        mocked_sw_client_class.reset_mock()
+        options.report_input = ['/some/path/1', '/some/path/2']
+        checkin.spacewalk_sync(options)
+        self.assertEquals(2, mocked_sw_client_class.call_count)
+        self.assertEquals(mocked_sw_client_class.mock_calls[:2], [call(local_dir='/some/path/1', prefix='1'), call(local_dir='/some/path/2', prefix='2')])
+
 
     def test_splice_sync(self):
         mocked_cp_client_class = self.mock(checkin, 'KatelloConnection')
@@ -316,6 +329,7 @@ consumer_list = \
                        u'prior': u'Library',
                        u'prior_id': 4,
                        u'updated_at': u'2013-05-01T21:33:43Z'},
+      u'facts': {u'systemid': u'12345'},
       u'environment_id': 5,
       u'guests': [],
       u'id': 18,
@@ -340,6 +354,7 @@ consumer_list = \
                        u'prior': u'Library',
                        u'prior_id': 4,
                        u'updated_at': u'2013-05-01T21:33:43Z'},
+      u'facts': {u'systemid': u'123456'},
       u'environment_id': 5,
       u'guests': [],
       u'id': 19,
