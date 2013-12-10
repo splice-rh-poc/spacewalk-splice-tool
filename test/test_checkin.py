@@ -58,6 +58,17 @@ class CheckinTest(SpliceToolTest):
 
         self.assertEquals(socket.getdefaulttimeout(), 300)
 
+    def test_check_for_invalid_org_names(self):
+        self.assertTrue(checkin.check_for_invalid_org_names({'1':'valid'}))
+        self.assertFalse(checkin.check_for_invalid_org_names({'1':'invalid/slash'}))
+        self.assertFalse(checkin.check_for_invalid_org_names({'1':'invalid>gt'}))
+        self.assertFalse(checkin.check_for_invalid_org_names({'1':'invalid<lt'}))
+
+    def test_pull_spacewalk_data(self):
+        mocked_client = Mock()
+        mocked_client.get_org_list.return_value={'1':'invalid/slash'}
+        self.assertRaises(Exception, checkin._pull_spacewalk_data, mocked_client)
+
     def test_spacewalk_sync(self):
         mocked_sw_client_class = self.mock(checkin, 'SpacewalkClient')
         mocked_sw_client = Mock()
@@ -124,7 +135,8 @@ class CheckinTest(SpliceToolTest):
         mocked_cp_client = Mock()
         mocked_cp_client_class.return_value = mocked_cp_client
         mocked_cp_client.get_consumers.return_value = consumer_list
-        mocked_cp_client.get_deleted_systems.return_value = []
+        mocked_cp_client.get_deleted_systems.return_value = [{'created':'some_date', 'consumerUuid':'some_uuid',
+                                                              'ownerKey':'some_key', 'ownerDisplayName': 'foo'}]
 
         mocked_sc_client_class = self.mock(
             checkin.splice_push, 'BaseConnection')
@@ -170,7 +182,9 @@ class CheckinTest(SpliceToolTest):
 
         self.assertEquals('/v1/marketingproductusage/',
                           mocked_sc.POST.call_args_list[1][0][0])
-        mpu = {'objects': []}
+        mpu = {'objects': [{'splice_server': 'test_uuid', 'deleted': True, 'organization_name': 'foo',
+                            'organization_label': 'some_key', 'instance_identifier': 'some_uuid',
+                            'checkin_date': 'some_date'}]}
         self.assertEquals(mpu, mocked_sc.POST.call_args_list[1][0][1])
 
     def test_get_katello_entitlements(self):

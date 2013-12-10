@@ -63,6 +63,12 @@ class UtilsTest(SpliceToolTest):
         cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
         self.assertEquals(443, cfg.getint("splice", "port"))
 
+    def test_config_reinit(self):
+        # unmock cfg_init, which is mocked in base.py
+        self.unmock(utils, 'cfg_init')
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        self.assertEquals(443, cfg.getint("splice", "port"))
+
     def test_multisw_config(self):
         # test first with mocked config (single spacewalk)
         cfg = utils.cfg_init()
