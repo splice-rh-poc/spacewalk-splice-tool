@@ -54,6 +54,7 @@ def get_multi_sw_cfg(cfg):
                                 cfg.sections())
     return spacewalk_sections
 
+
 def create_org_name(name, prefix=""):
     """
     given a name, optionally add the prefix in a human-readable form.

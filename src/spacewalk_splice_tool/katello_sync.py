@@ -20,6 +20,7 @@ _LOG = logging.getLogger(__name__)
 
 SAT_OWNER_PREFIX = 'satellite-'
 
+
 class KatelloPushSync:
     """
     a class for writing data to katello

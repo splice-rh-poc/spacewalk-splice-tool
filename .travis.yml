@@ -1,8 +1,21 @@
 language: python
-python:
-  - "2.6"
-  - "2.7"
+
+# we want access to installed m2crypto
+virtualenv:
+  system_site_packages: true
+
+before_install:
+ - "sudo apt-get install m2crypto libssl-dev"
+
 install:
-  - pip install ./src
-#  - pip install -r requirements.txt
-script: nosetests 
+  - pip install -r requirements.txt
+  - git clone https://github.com/splice/splice-server.git
+  - cd splice-server/src
+  - python setup.py install
+  - cd ../..
+  - rm -rf splice-server
+
+
+script:
+  - make travisstylish
+  - cd test; nosetests 
