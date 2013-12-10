@@ -20,7 +20,6 @@ _LOG = logging.getLogger(__name__)
 
 SAT_OWNER_PREFIX = 'satellite-'
 
-
 class KatelloPushSync:
     """
     a class for writing data to katello
@@ -180,7 +179,7 @@ class KatelloPushSync:
 
                 if kt_role == "Org Admin Role for satellite-%s" % sw_users[kt_username]['organization_id'] and \
                         "Organization Administrator" not in sw_roles:
-                    _LOG.info("removing %s from %s org admin role in katello" % (kt_username, "satellite-%s" % sw_user_org))
+                    _LOG.info("removing %s from %s org admin role in katello" % (kt_username, sw_user_org))
                     self.katello_client.ungrant_org_admin(kt_user=kt_users[kt_username], kt_org_label=sw_user_org)
 
                 elif kt_role == 'Administrator' and 'Satellite Administrator' not in sw_roles:

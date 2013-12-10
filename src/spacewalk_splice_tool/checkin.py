@@ -177,7 +177,7 @@ def spacewalk_sync(options):
             sw_clients.append(SpacewalkClient(host=CONFIG.get(sw_section, "host"),
                                               ssh_key_path=CONFIG.get(sw_section, "ssh_key_path"),
                                               login=CONFIG.get(sw_section, "login"),
-                                              prefix=sw_section[:10]))
+                                              prefix=sw_section[10:]))
 
     for client in sw_clients:
         consumers = []

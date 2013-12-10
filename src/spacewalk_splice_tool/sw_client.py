@@ -18,6 +18,8 @@ import subprocess
 import sys
 import os
 
+from spacewalk_splice_tool import utils
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -70,7 +72,7 @@ class SpacewalkClient(object):
         system_list = self._get_report('splice-export')
         for s in system_list:
             s['server_id'] = self.prefix + s['server_id']
-            s['organization'] = self.prefix + s['organization']
+            s['organization'] = utils.create_org_name(name=s['organization'], prefix=self.prefix)
             s['org_id'] = self.prefix + s['org_id']
 
         return system_list
@@ -96,10 +98,9 @@ class SpacewalkClient(object):
         # efficient as just getting the orgs from the db, but we may want to
         # create person consumers in the future.
         full_user_list = self._get_report('users')
-
         orgs = {}
         for u in full_user_list:
-            orgs[self.prefix + u['organization_id']] = self.prefix + u['organization']
+            orgs[self.prefix + u['organization_id']] = utils.create_org_name(name=u['organization'], prefix=self.prefix)
 
         return orgs
 

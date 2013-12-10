@@ -57,6 +57,17 @@ def get_multi_sw_cfg(cfg):
                                 cfg.sections())
     return spacewalk_sections
 
+def create_org_name(name, prefix=""):
+    """
+    given a name, optionally add the prefix in a human-readable form.
+
+    Ex: "Foo Org" from a satellite labelled "QA" would be "Foo Org (QA)"
+    """
+    if not prefix:
+        return name
+
+    return "%s (%s)" % (name, prefix)
+
 
 def get_release():
     f = open('/etc/redhat-release')
