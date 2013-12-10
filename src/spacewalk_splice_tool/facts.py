@@ -125,12 +125,3 @@ def guest_facts(guestinfo):
         guest_facts_dict['virt.host_type'] = 'Unknown'
     return guest_facts_dict
 
-
-def inactive_facts(details):
-    inactive_facts_dict = dict()
-    if "inactive" in details:
-        if "last_boot" in details["inactive"]:
-            inactive_facts_dict["inactive_dot_last_boot"] = str(details["inactive"]["last_boot"])
-        if "last_checkin" in details["inactive"]:
-            inactive_facts_dict["inactive_dot_last_checkin"] = str(details["inactive"]["last_checkin"])
-    return inactive_facts_dict
