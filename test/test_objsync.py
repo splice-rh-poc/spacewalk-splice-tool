@@ -11,7 +11,7 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from mock import Mock, call
+from mock import Mock, call, patch
 
 from spacewalk_splice_tool.katello_sync import KatelloPushSync
 
@@ -121,7 +121,8 @@ class TestObjectSync(SpliceToolTest):
                             { 'name': '101', 'uuid': '1-1-2', 'owner': {'key': 'satellite-1'}, 'facts': {'systemid': '101'}},
                             { 'name': '102', 'uuid': '1-1-3', 'owner': {'key': 'satellite-2'}, 'facts': {'systemid': '102'}},
                             { 'name': '102', 'uuid': '1-1-4', 'owner': {'key': 'NOT-A-SAT-ORG'}, 'facts': {'systemid': '103'}},
-                            { 'name': '107', 'uuid': '1-1-5', 'owner': {'key': 'satellite-1'}, 'facts': {'systemid': '107'}}
+                            { 'name': '107', 'uuid': '1-1-5', 'owner': {'key': 'satellite-1'}, 'facts': {'systemid': '107'}},
+                            { 'name': '999', 'uuid': '9-9-9', 'owner': {'key': 'satellite-1'}, 'facts': {}}
                          ]
         self.kps.delete_stale_consumers(kt_consumer_list, sw_system_list)
         expected = [call('1-1-3'), call('1-1-5')]
@@ -140,6 +141,12 @@ class TestObjectSync(SpliceToolTest):
         expected = [call(username='barbar', email='bar@foo.com')]
         result = self.cp_client.create_user.call_args_list
         assert result == expected, "%s does not match expected call set %s" % (result, expected)
+
+    @patch('spacewalk_splice_tool.transforms.DataTransforms.transform_entitlements_to_rcs')
+    def test_mpu_enrich_worker(self, mock_transform):
+        fake_mpu = {'instance_identifier': 'foo'}
+        new_fake_mpu = self.kps._mpu_enrich_worker(fake_mpu)
+        self.assertTrue('product_info' in new_fake_mpu)
 
     def test_role_update(self):
         sw_userlist = [{'username': 'foo', 'user_id': '1', 'organization_id': '1',
@@ -174,14 +181,33 @@ class TestObjectSync(SpliceToolTest):
         # ensure user "bazbaz" had full admin rights revoked 
         self.cp_client.ungrant_full_admin.assert_called_once_with(kt_user=user_matcher)
 
-#    def test_host_guests(self):
-#        host_guest_list = [{'server_id': '1000010111', 'guests': '1000010112'},
-#                            {'server_id': '1000010126', 'guests': '1000010127;1000010130;1000010128;1000010129'}
-#                            ]
-#        kt_consumer_list = [
-#                            { 'id': 1},
-#                            { 'id': 2},
-#                            { 'id': 3}
-#                         ]
-#        checkin.upload_host_guest_mapping(host_guest_list, kt_consumer_list, self.cp_client)
-#        
+    def test_host_guests(self):
+        host_guest_list = [{'server_id': '1000010111', 'guests': '1000010112;1000010113'},
+                          ]
+        kt_consumer_list = [
+                            { 'id': 1, 'uuid':'1-2-3', 'name': 'foo'},
+                            { 'id': 2, 'uuid':'4-5-6', 'name': 'bar'},
+                            { 'id': 3, 'uuid':'7-8-9', 'name': 'baz'}
+                         ]
+        self.cp_client.get_spacewalk_id = Mock()
+        self.cp_client.get_spacewalk_id.side_effect = ['1000010111','1000010112','1000010113']
+        self.kps.upload_host_guest_mapping(host_guest_list, kt_consumer_list)
+        self.cp_client.update_consumer.assert_called_once_with(guest_uuids=['4-5-6', '7-8-9'], cp_uuid='1-2-3', name='foo')
+        
+    def test_upload_consumer(self):
+        self.cp_client.find_by_spacewalk_id = Mock()
+        self.cp_client.find_by_spacewalk_id.return_value = {'uuid': '9-8-7'}
+        self.kps._upload_consumer_to_katello(consumer={'id': '1', 'name': 'name1', 'facts': {}, 'installed_products': [],
+                                                       'owner':'owner1', 'last_checkin':'some_date'})
+        self.cp_client.update_consumer.assert_called_once_with(name='name1', installed_products=[], cp_uuid='9-8-7',
+                                                               last_checkin='some_date', facts={}, owner='owner1')
+
+        self.cp_client.find_by_spacewalk_id.return_value = None
+        self.kps._upload_consumer_to_katello(consumer={'id': '1', 'name': 'name1', 'facts': {}, 'installed_products': [],
+                                                       'owner':'owner1', 'last_checkin':'some_date'})
+        self.cp_client.create_consumer.assert_called_once_with(name='name1', installed_products=[],
+                                                               last_checkin='some_date', facts={},
+                                                               owner='owner1', sw_uuid='1')
+
+
+

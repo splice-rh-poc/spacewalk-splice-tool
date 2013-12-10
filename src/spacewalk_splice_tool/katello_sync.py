@@ -29,16 +29,18 @@ class KatelloPushSync:
         self.katello_client = katello_client
         self.num_threads = num_threads
 
-    def enrich_mpu(self, marketing_product_usage):
-
+    def _mpu_enrich_worker(self, mpu):
+        """
+        worker for queue (see enrich_mpu below)
+        """
         dt = transforms.DataTransforms()
+        # TODO: this is difficult to understand
+        mpu.update({'product_info':
+                    dt.transform_entitlements_to_rcs(self.katello_client.get_entitlements(mpu['instance_identifier']))})
+        return mpu
 
-        def _mpu_enrich_worker(mpu):
-            mpu.update({'product_info':
-                        dt.transform_entitlements_to_rcs(self.katello_client.get_entitlements(mpu['instance_identifier']))})
-            return mpu
-
-        enriched_mpu = utils.queued_work(_mpu_enrich_worker, marketing_product_usage, self.num_threads)
+    def enrich_mpu(self, marketing_product_usage):
+        enriched_mpu = utils.queued_work(self._mpu_enrich_worker, marketing_product_usage, self.num_threads)
         return enriched_mpu
 
     def update_owners(self, orgs, prefix):
