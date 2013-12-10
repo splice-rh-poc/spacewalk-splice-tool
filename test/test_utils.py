@@ -14,6 +14,7 @@
 
 from mock import Mock, patch
 import socket
+import sys
 
 from base import SpliceToolTest
 
@@ -21,11 +22,32 @@ from spacewalk_splice_tool import checkin, katello_sync
 from spacewalk_splice_tool import sw_client
 from spacewalk_splice_tool import utils
 
+# from subscription-manager
+class MockStderr:
+    def __init__(self):
+        self.buffer = ""
+
+    def write(self, buf):
+        self.buffer = self.buffer + buf
+
+    @staticmethod
+    def isatty(buf=None):
+        return False
+
 
 class UtilsTest(SpliceToolTest):
 
     def test_system_exit(self):
         self.assertRaises(SystemExit, utils.system_exit, 500)
+
+    def test_system_exit_message(self):
+        self.mock_stderr = MockStderr()
+        sys.stderr = self.mock_stderr
+        self.assertRaises(SystemExit, utils.system_exit, 500, message='foobarbaz')
+        exit_output = self.mock_stderr.buffer
+        self.assertTrue(exit_output.find("foobarbaz") == 0, "message was not printed on exit")
+        sys.stderr = sys.__stderr__
+
 
     def test_get_release(self):
         self.unmock(utils, 'get_release')

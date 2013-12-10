@@ -43,10 +43,7 @@ def read_mapping_file(mappingfile):
     return dic_data
 
 
-def cfg_init(config_file=None, reinit=False):
-    CONFIG = None
-    if CONFIG and not reinit:
-        return CONFIG
+def cfg_init(config_file=None):
     CONFIG = SafeConfigParser(defaults=DEFAULTS)
     CONFIG.read(config_file)
     return CONFIG
