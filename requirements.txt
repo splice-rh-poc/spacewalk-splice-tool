@@ -1,0 +1,13 @@
+git+git://github.com/beav/python-certutils.git#egg=certutils
+git+git://github.com/Katello/katello-cli.git#egg=katello_cli
+git+https://github.com/beav/subscription-manager.git@setuppy#egg=subscription_manager
+git+https://github.com/candlepin/python-rhsm.git#egg=rhsm
+https://github.com/dcramer/pyflakes/tarball/master
+iniparse
+isodate
+kerberos
+mock
+nose
+pep8
+pylint==0.26.0
+python-dateutil
