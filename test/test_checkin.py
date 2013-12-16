@@ -12,12 +12,12 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 
-from mock import Mock, patch, call
+from mock import Mock, patch, call, MagicMock
 import socket
 
 from base import SpliceToolTest
 
-from spacewalk_splice_tool import checkin, katello_sync
+from spacewalk_splice_tool import checkin, katello_sync, utils
 from spacewalk_splice_tool import sw_client
 
 
@@ -104,7 +104,6 @@ class CheckinTest(SpliceToolTest):
         mocked_cp_client.get_consumers.return_value = consumer_list
         
         options = Mock()
-        options.report_input = None
         delete_stale_consumers = self.mock(katello_sync.KatelloPushSync, 'delete_stale_consumers')
         upload_to_cp = self.mock(katello_sync.KatelloPushSync, 'upload_to_katello')
 
@@ -121,14 +120,45 @@ class CheckinTest(SpliceToolTest):
         self.assertTrue(upload_to_cp.called)
         self.assertEquals(2, len(upload_to_cp.call_args[0][0]))
 
+    @patch('spacewalk_splice_tool.utils')
+    def test_ssh_plus_localfile_sw_sync(self, mocked_utils):
         # check that we create two SpacewalkClients for multiple input dirs
-        # TODO: I should be creating a new test here instead of resetting a mock
-        mocked_sw_client_class.reset_mock()
-        options.report_input = ['/some/path/1', '/some/path/2']
-        checkin.spacewalk_sync(options)
-        self.assertEquals(2, mocked_sw_client_class.call_count)
-        self.assertEquals(mocked_sw_client_class.mock_calls[:2], [call(local_dir='/some/path/1', prefix='1'), call(local_dir='/some/path/2', prefix='2')])
+        # TODO: factor out these setup steps
+        options = Mock()
+        self.unmock_config()
+        self.mock_config(multisw=True)
+        options.spacewalk_sync = True
+        mocked_sw_client_class = self.mock(checkin, 'SpacewalkClient')
+        mocked_sw_client = Mock()
+        mocked_sw_client_class.return_value = mocked_sw_client
+        mocked_sw_client.get_org_list.return_value = org_list
+        mocked_sw_client.get_user_list.return_value = user_list
+        mocked_sw_client.get_system_list.return_value = system_list
+        mocked_sw_client.get_channel_list.return_value = channel_list
+        mocked_sw_client.get_host_guest_list.return_value = []
+        mocked_sw_client.prefix = "someprefix"
 
+
+        mocked_cp_client_class = self.mock(checkin, 'KatelloConnection')
+        mocked_cp_client = Mock()
+        mocked_cp_client_class.return_value = mocked_cp_client
+        mocked_cp_client.get_owners.return_value = owner_list
+        mocked_cp_client.get_redhat_provider.return_value = provider
+        mocked_cp_client.get_roles.return_value = role_list
+        mocked_cp_client.get_users.return_value = cp_user_list
+        mocked_cp_client.get_consumers.return_value = consumer_list
+
+
+        checkin.spacewalk_sync(options)
+
+
+        self.assertEquals(3, mocked_sw_client_class.call_count)
+        # the order of calls can get swapped, since it's based on reading a dict
+        self.assertTrue(call(local_dir='/path/to/report', prefix='bar') in mocked_sw_client_class.mock_calls[:3])
+        self.assertTrue(call(ssh_key_path='spacewalk_ssh_key_path', login='swreport', host='spacewalkhost', prefix='baz') in
+                        mocked_sw_client_class.mock_calls[:3])
+        self.assertTrue(call(ssh_key_path='spacewalk_ssh_key_path', login='swreport', host='spacewalkhost', prefix='foo') in
+                        mocked_sw_client_class.mock_calls[:3])
 
     def test_splice_sync(self):
         mocked_cp_client_class = self.mock(checkin, 'KatelloConnection')

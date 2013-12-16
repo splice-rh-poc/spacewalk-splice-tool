@@ -164,20 +164,22 @@ def spacewalk_sync(options):
                                        num_threads=CONFIG.getint('main', 'num_threads'))
 
     sw_clients = []
-    if options.report_input:
-        _LOG.info("Started capturing system data from %s local dirs" % len(options.report_input))
-        for report_input in options.report_input:
-            sw_clients.append(SpacewalkClient(local_dir=report_input, prefix=os.path.basename(report_input)))
-
-    # if report_input wasn't defined, read from the conf file
-    else:
-        _LOG.info("Started capturing system data from %s spacewalk(s)" % len(utils.get_multi_sw_cfg(CONFIG)))
-        for sw_section in utils.get_multi_sw_cfg(CONFIG):
-            # the :10 slice is to strip the word "spacewalk_" from the section name to create the prefix
+    _LOG.info("Started capturing system data from %s spacewalk(s)" % (len(utils.get_multi_sw_cfg(CONFIG))))
+    print("Started capturing system data from %s spacewalk(s)" % (len(utils.get_multi_sw_cfg(CONFIG))))
+    for sw_section in utils.get_multi_sw_cfg(CONFIG):
+        print "loop %s" % sw_section
+        # the :10 slice is to strip the word "spacewalk_" from the section name to create the prefix
+        sw_prefix = sw_section[10:]
+        if CONFIG.has_option(sw_section, "type") and CONFIG.get(sw_section, "type") == 'file':
+            sw_clients.append(SpacewalkClient(local_dir=CONFIG.get(sw_section, 'report_input'), prefix=sw_prefix))
+            _LOG.debug("added file datasource for %s" % sw_prefix)
+        else:
+            # default "type" is ssh
             sw_clients.append(SpacewalkClient(host=CONFIG.get(sw_section, "host"),
                                               ssh_key_path=CONFIG.get(sw_section, "ssh_key_path"),
                                               login=CONFIG.get(sw_section, "login"),
-                                              prefix=sw_section[10:]))
+                                              prefix=sw_prefix))
+            _LOG.debug("added SSH datasource for %s" % sw_prefix)
 
     for client in sw_clients:
         consumers = []
