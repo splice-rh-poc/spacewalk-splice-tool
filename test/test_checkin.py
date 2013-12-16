@@ -153,11 +153,12 @@ class CheckinTest(SpliceToolTest):
 
 
         self.assertEquals(3, mocked_sw_client_class.call_count)
-        self.assertEquals(mocked_sw_client_class.mock_calls[:3],
-                         [call(local_dir='/path/to/report', prefix='bar'),
-                          call(ssh_key_path='spacewalk_ssh_key_path', login='swreport', host='spacewalkhost', prefix='baz'),
-                          call(ssh_key_path='spacewalk_ssh_key_path', login='swreport', host='spacewalkhost', prefix='foo')])
-
+        # the order of calls can get swapped, since it's based on reading a dict
+        self.assertTrue(call(local_dir='/path/to/report', prefix='bar') in mocked_sw_client_class.mock_calls[:3])
+        self.assertTrue(call(ssh_key_path='spacewalk_ssh_key_path', login='swreport', host='spacewalkhost', prefix='baz') in
+                        mocked_sw_client_class.mock_calls[:3])
+        self.assertTrue(call(ssh_key_path='spacewalk_ssh_key_path', login='swreport', host='spacewalkhost', prefix='foo') in
+                        mocked_sw_client_class.mock_calls[:3])
 
     def test_splice_sync(self):
         mocked_cp_client_class = self.mock(checkin, 'KatelloConnection')
