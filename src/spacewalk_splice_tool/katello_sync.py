@@ -115,7 +115,7 @@ class KatelloPushSync:
         # perform deletions
         for owner_label in owner_labels_names.keys():
             # bail out if this isn't an owner we are managing
-            print "comparing %s to %s" % (owner_label, SAT_OWNER_PREFIX + prefix)
+            _LOG.debug("comparing %s to %s" % (owner_label, SAT_OWNER_PREFIX + prefix))
             if not owner_label.startswith(SAT_OWNER_PREFIX + prefix):
                 continue
 

@@ -77,4 +77,4 @@ class UtilsTest(SpliceToolTest):
         # unmock cfg_init, which is mocked in base.py
         self.unmock(utils, 'cfg_init')
         cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
-        self.assertEquals(['spacewalk_foo', 'spacewalk_bar'], utils.get_multi_sw_cfg(cfg))
+        self.assertEquals(['spacewalk_foo', 'spacewalk_baz', 'spacewalk_bar'], utils.get_multi_sw_cfg(cfg))

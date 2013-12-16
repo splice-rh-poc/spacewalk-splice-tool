@@ -91,7 +91,7 @@ class DataTransforms:
                     facts_data['spacewalk-server-hostname'] = CONFIG.get("spacewalk_%s" % prefix, "host")
                 else:
                     facts_data['spacewalk-server-hostname'] = CONFIG.get("spacewalk", "host")
-            except ConfigParser.NoSectionError:
+            except ConfigParser.Error:
                 _LOG.info("spacewalk server hostname not found for system %s" % details['name'])
                 facts_data['spacewalk-server-hostname'] = "unknown"
 

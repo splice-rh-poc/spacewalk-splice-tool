@@ -60,7 +60,7 @@ class SpliceToolTest(unittest.TestCase):
     def unmock(self, parent, child):
         setattr(parent, child, self._mocks.pop((parent, child)))
 
-    def mock_config(self):
+    def mock_config(self, multisw = False):
         self.old_config = checkin.CONFIG
         
         defaults = {'spacewalk': {'host': 'spacewalkhost',
@@ -77,6 +77,29 @@ class SpliceToolTest(unittest.TestCase):
                                'splice_server_hostname': 'test_ssh',
                                'splice_server_description': 'test_ssd',}
                    }
+
+        if multisw:
+            defaults = {'spacewalk_foo': {'host': 'spacewalkhost',
+                                          'ssh_key_path': 'spacewalk_ssh_key_path',
+                                          'login': 'swreport'},
+                       'spacewalk_bar': {'type': 'file',
+                                         'host': 'spacewalkhost',
+                                         'report_input': '/path/to/report'},
+                       'spacewalk_baz': {'type': 'ssh',
+                                         'host': 'spacewalkhost',
+                                         'ssh_key_path': 'spacewalk_ssh_key_path',
+                                         'login': 'swreport'},
+                        'main': {'socket_timeout': '300', 'num_threads': '4'},
+                        'splice': {'hostname': 'test_hostname',
+                                   'port': '8888',
+                                   'handler': 'test_handler',
+                                   'splice_id_cert': 'test_cert',
+                                   'splice_id_key': 'test_key',
+                                   'splice_ca_cert': 'test_ca',
+                                   'splice_server_environment': 'test_sse',
+                                   'splice_server_hostname': 'test_ssh',
+                                   'splice_server_description': 'test_ssd',}
+                       }
 
         config = SafeConfigParser(defaults)
 
