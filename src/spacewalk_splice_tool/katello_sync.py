@@ -12,6 +12,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 import logging
+import os
 import tempfile
 from spacewalk_splice_tool import utils
 from spacewalk_splice_tool import transforms
@@ -92,8 +93,8 @@ class KatelloPushSync:
                     provider = self.katello_client.get_redhat_provider(
                         org=orgs[org_id])
                     self.katello_client.import_manifest(prov_id=provider['id'], file=manifest_file)
-                    # explicit close to make sure the temp file gets deleted
                     manifest_file.close()
+                    os.unlink(manifest_file.name)
             # Check that the org names are also equal, as the name can be
             # modified in Satellite at any time.
             elif orgs[org_id] != owner_label_map[katello_label]['name']:

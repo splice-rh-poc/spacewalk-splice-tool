@@ -83,7 +83,10 @@ class TestObjectSync(SpliceToolTest):
         self.cp_client.export_manifest = Mock(return_value="FILECONTENT")
         self.kps = KatelloPushSync(katello_client=self.cp_client, num_threads=1)
 
-    def test_owner_add(self):
+    @patch("os.unlink")
+    @patch("__builtin__.open")
+    @patch("tempfile.NamedTemporaryFile")
+    def test_owner_add(self, mock_tempfile, mock_open, mock_unlink):
         sw_prefix = 'qa'
         sw_orgs = {'1': 'foo', '2': 'bar', '3': 'baz'}
         self.kps.update_owners(sw_orgs, prefix=sw_prefix)
@@ -95,6 +98,8 @@ class TestObjectSync(SpliceToolTest):
         self.cp_client.import_manifest.assert_called_once_with(prov_id='99999', file=true_matcher)
         # TODO: this says label but it's really "name"
         self.cp_client.create_org_admin_role_permission.assert_called_once_with(kt_org_label='baz')
+
+        self.assertEquals(1, mock_unlink.call_count)
 
     def test_owner_delete(self):
         # owner #2 is missing and should get zapped 
@@ -208,6 +213,3 @@ class TestObjectSync(SpliceToolTest):
         self.cp_client.create_consumer.assert_called_once_with(name='name1', installed_products=[],
                                                                last_checkin='some_date', facts={},
                                                                owner='owner1', sw_uuid='1')
-
-
-

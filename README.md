@@ -1,3 +1,5 @@
+![build status](https://travis-ci.org/splice/spacewalk-splice-tool.png?branch=master)
+
 spacewalk-splice-tool
 =====================
 
