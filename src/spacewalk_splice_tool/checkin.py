@@ -186,9 +186,9 @@ def spacewalk_sync(options):
         spacewalk_details = _pull_spacewalk_data(client)
         kps.update_owners(spacewalk_details['org_list'], client.prefix)
 
-        # TODO: do we care about this? might not be needed
-        #kps.update_users(spacewalk_details['sw_user_list'])
-        #kps.update_roles(spacewalk_details['sw_user_list'])
+        if CONFIG.has_option('main', 'sync_users') and CONFIG.getboolean('main', 'sync_users'):
+            kps.update_users(spacewalk_details['sw_user_list'])
+            kps.update_roles(spacewalk_details['sw_user_list'])
 
         katello_consumer_list = katello_client.get_consumers()
 
@@ -257,6 +257,12 @@ def main(options):
     socket.setdefaulttimeout(CONFIG.getfloat('main', 'socket_timeout'))
 
     if options.spacewalk_sync:
+        # ensure we don't try to sync users from multiple spacewalks
+        if len(utils.get_multi_sw_cfg(CONFIG)) > 1 and \
+           CONFIG.has_option('main', 'sync_users') and \
+           CONFIG.getboolean('main', 'sync_users'):
+            raise RuntimeError("cannot sync users from multiple satellites")
+
         spacewalk_sync(options)
 
     if options.splice_sync:
