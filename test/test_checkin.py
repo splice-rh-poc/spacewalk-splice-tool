@@ -226,6 +226,19 @@ class CheckinTest(SpliceToolTest):
                           kc.return_value.get_entitlements.call_args[0][0])
 
 
+    @patch('spacewalk_splice_tool.utils')
+    def test_multisw_and_usersync(self, mock_utils):
+        # check that we create two SpacewalkClients for multiple input dirs
+        # TODO: factor out these setup steps
+        options = Mock()
+        options.spacewalk_sync = True
+        self.mock(utils, 'get_multi_sw_cfg', ['sat1', 'sat2'])
+        checkin.CONFIG.set('main', 'sync_users', 'true')
+        
+        self.assertRaises(RuntimeError, checkin.main, options)
+
+
+
 user_list = [{'username': 'admin', 
               'first_name': 'James', 
               'last_name': 'Slagle', 
