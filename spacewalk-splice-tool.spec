@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.46
+Version:        0.47
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,16 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Thu Jan 09 2014 Chris Duryee (beav) <cduryee@redhat.com>
+- use sync_users config setting (cduryee@redhat.com)
+- refactor to put "report_input" a conf option instead of cli option
+  (cduryee@redhat.com)
+- delete manifest zip after importing (cduryee@redhat.com)
+- add travis config (cduryee@redhat.com)
+- add prefixes to host/guest list (cduryee@redhat.com)
+- allow data to come in from multiple spacewalks (cduryee@redhat.com)
+- fix unit test to not require actual CertificateDirectory (cduryee@redhat.com)
+
 * Tue Sep 17 2013 Chris Duryee (beav) <cduryee@redhat.com>
 - 1009035: convert some rhel4 arches to known arch values (cduryee@redhat.com)
 
