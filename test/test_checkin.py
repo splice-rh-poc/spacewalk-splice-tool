@@ -114,11 +114,14 @@ class CheckinTest(SpliceToolTest):
         # base channel was set to RH channel
         self.assertEquals('rhel-x86_64-server-6',
                           system_list[1]['software_channel'])
+        # test BZ 1064523
+        self.assertEquals('rhel-x86_64-server-6;some-other-channel',
+                          system_list[2]['software_channel'])
         self.assertTrue(delete_stale_consumers.called)
         self.assertTrue(system_list[0].has_key('installed_products'))
         self.assertTrue(system_list[1].has_key('installed_products'))
         self.assertTrue(upload_to_cp.called)
-        self.assertEquals(2, len(upload_to_cp.call_args[0][0]))
+        self.assertEquals(3, len(upload_to_cp.call_args[0][0]))
 
     @patch('spacewalk_splice_tool.utils')
     def test_ssh_plus_localfile_sw_sync(self, mocked_utils):
@@ -275,6 +278,25 @@ system_list = [{'memory': '7466',
                {'memory': '7466', 
                 'server_id': '1000010002', 
                 'software_channel': 'clone-clone-2-rhel-x86_64-server-6', 
+                'name': 'ec2-23-20-74-50.compute-1.amazonaws.com', 
+                'registration_time': '2013-04-25 15:51:03', 
+                'registered_by': 'admin', 
+                'hostname': 'ec2-23-20-74-50.compute-1.amazonaws.com', 
+                'org_id': '1', 
+                'ipv6_address': '::1', 
+                'hardware': '2 CPUs 1 Sockets; eth0 10.96.161.145/255.255.255.0 12:31:39:16:a2:67; lo 127.0.0.1/255.0.0.0 00:00:00:00:00:00', 
+                'system_group': '', 
+                'architecture': 'x86_64', 
+                'virtual_host': '', 
+                'last_checkin_time': '2013-05-03 13:15:03', 
+                'entitlements': 'Spacewalk Management Entitled Servers', 
+                'organization': 'Red Hat (Internal Use Only)', 
+                'ip_address': '10.96.161.145', 
+                'is_virtualized': 'No', 
+                'sockets': '1'},
+               {'memory': '7466', 
+                'server_id': '1000010003', 
+                'software_channel': 'clone-clone-2-rhel-x86_64-server-6;some-other-channel', 
                 'name': 'ec2-23-20-74-50.compute-1.amazonaws.com', 
                 'registration_time': '2013-04-25 15:51:03', 
                 'registered_by': 'admin', 
