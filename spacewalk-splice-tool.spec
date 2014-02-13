@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.46.1
+Version:        0.46.2
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,9 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Thu Feb 13 2014 Chris Duryee <cduryee@redhat.com> 0.46.2-1
+- remove extraneous log statement
+
 * Thu Feb 13 2014 Chris Duryee <cduryee@redhat.com> 0.46.1-1
 - 1064523: parse ';' properly in channel list when calculating clones
 
