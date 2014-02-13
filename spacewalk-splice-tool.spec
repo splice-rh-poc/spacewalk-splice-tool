@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.46
+Version:        0.46.0
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
