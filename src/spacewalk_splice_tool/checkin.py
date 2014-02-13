@@ -104,8 +104,15 @@ def update_system_channel(systems, channels):
     _LOG.info("calculating base channels from cloned channels")
     channel_map = channel_mapping(channels)
     for system in systems:
-        system['software_channel'] = channel_map.get(system['software_channel'],
-                                                     system['software_channel'])
+        _LOG.debug("original channels (including clones) for %s: %s" % (system['server_id'], system['software_channel']))
+        orig_system_channels = system['software_channel'].split(';')
+        new_system_channels = []
+        for sc in orig_system_channels:
+            new_channel = channel_map.get(sc, sc)
+            _LOG.info("original software channel is %s, new channel is %s" % (sc, new_channel))
+            new_system_channels.append(new_channel)
+        system['software_channel'] = ';'.join(new_system_channels)
+        _LOG.debug("new channels (no clones) for %s: %s" % (system['server_id'], system['software_channel']))
 
 
 def check_for_invalid_org_names(org_list):

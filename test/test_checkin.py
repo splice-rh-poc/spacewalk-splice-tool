@@ -107,7 +107,7 @@ class CheckinTest(SpliceToolTest):
         self.assertTrue(system_list[0].has_key('installed_products'))
         self.assertTrue(system_list[1].has_key('installed_products'))
         self.assertTrue(upload_to_cp.called)
-        self.assertEquals(2, len(upload_to_cp.call_args[0][0]))
+        self.assertEquals(3, len(upload_to_cp.call_args[0][0]))
 
     def test_splice_sync(self):
         mocked_cp_client_class = self.mock(checkin, 'KatelloConnection')
