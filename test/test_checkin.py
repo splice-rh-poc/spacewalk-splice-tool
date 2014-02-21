@@ -107,6 +107,7 @@ class CheckinTest(SpliceToolTest):
         options.report_input = None
         delete_stale_consumers = self.mock(katello_sync.KatelloPushSync, 'delete_stale_consumers')
         upload_to_cp = self.mock(katello_sync.KatelloPushSync, 'upload_to_katello')
+        autoentitle = self.mock(katello_sync.KatelloPushSync, 'autoentitle_satellite_orgs')
 
         checkin.spacewalk_sync(options)
         # single SW, ensure we only initailized one sw client class
@@ -116,6 +117,7 @@ class CheckinTest(SpliceToolTest):
         self.assertEquals('rhel-x86_64-server-6',
                           system_list[1]['software_channel'])
         self.assertTrue(delete_stale_consumers.called)
+        self.assertTrue(autoentitle.called)
         self.assertTrue(system_list[0].has_key('installed_products'))
         self.assertTrue(system_list[1].has_key('installed_products'))
         self.assertTrue(upload_to_cp.called)

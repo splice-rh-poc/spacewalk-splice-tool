@@ -69,6 +69,14 @@ class UtilsTest(SpliceToolTest):
         cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
         self.assertEquals(443, cfg.getint("splice", "port"))
 
+    def test_autoentitle_config(self):
+        cfg = utils.cfg_init()
+        self.assertEquals(True, utils.get_autoentitle(cfg))
+        self.unmock(utils, 'cfg_init')
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        cfg.set('katello', 'autoentitle_systems', 'False')
+        self.assertEquals(False, utils.get_autoentitle(cfg))
+
     def test_multisw_config(self):
         # test first with mocked config (single spacewalk)
         cfg = utils.cfg_init()

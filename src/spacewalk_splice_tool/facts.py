@@ -124,4 +124,3 @@ def guest_facts(guestinfo):
         guest_facts_dict['virt.is_guest'] = True
         guest_facts_dict['virt.host_type'] = 'Unknown'
     return guest_facts_dict
-
