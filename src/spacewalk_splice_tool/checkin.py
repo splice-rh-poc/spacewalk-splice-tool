@@ -132,19 +132,21 @@ def check_for_invalid_org_names(org_list):
 
 
 #TODO: this should probably live in sw_client
-def _pull_spacewalk_data(client):
+def _pull_spacewalk_data(client, flatten=False):
     """
     return a dict with the info we need from a spacewalk instance (not prefixed yet)
     """
 
     _LOG.info("retrieving data from spacewalk %s" % client.prefix)
+    if flatten:
+        _LOG.info("org structure for spacewalk will be flattened into a single org")
 
     return_dict = {}
     return_dict['sw_user_list'] = client.get_user_list()
-    return_dict['system_details'] = client.get_system_list()
+    return_dict['system_details'] = client.get_system_list(flatten)
     return_dict['channel_details'] = client.get_channel_list()
     return_dict['hosts_guests'] = client.get_host_guest_list()
-    return_dict['org_list'] = client.get_org_list()
+    return_dict['org_list'] = client.get_org_list(flatten)
 
     if not check_for_invalid_org_names(return_dict['org_list']):
         raise Exception("Invalid org names found. Check /var/log/splice/spacewalk_splice_tool.log for more detail.")
@@ -171,9 +173,7 @@ def spacewalk_sync(options):
 
     sw_clients = []
     _LOG.info("Started capturing system data from %s spacewalk(s)" % (len(utils.get_multi_sw_cfg(CONFIG))))
-    print("Started capturing system data from %s spacewalk(s)" % (len(utils.get_multi_sw_cfg(CONFIG))))
     for sw_section in utils.get_multi_sw_cfg(CONFIG):
-        print "loop %s" % sw_section
         # the :10 slice is to strip the word "spacewalk_" from the section name to create the prefix
         sw_prefix = sw_section[10:]
         if CONFIG.has_option(sw_section, "type") and CONFIG.get(sw_section, "type") == 'file':
@@ -189,7 +189,7 @@ def spacewalk_sync(options):
 
     for client in sw_clients:
         consumers = []
-        spacewalk_details = _pull_spacewalk_data(client)
+        spacewalk_details = _pull_spacewalk_data(client, utils.get_flatten_orgs(CONFIG))
         kps.update_owners(spacewalk_details['org_list'], client.prefix)
 
         if CONFIG.has_option('main', 'sync_users') and CONFIG.getboolean('main', 'sync_users'):

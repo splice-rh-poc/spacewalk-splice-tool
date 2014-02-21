@@ -22,6 +22,8 @@ from spacewalk_splice_tool import utils
 
 _LOG = logging.getLogger(__name__)
 
+FLAT_ORG_NAME = 'flattened org'
+
 
 class SpacewalkClient(object):
 
@@ -68,12 +70,16 @@ class SpacewalkClient(object):
         return retval
 
     # TODO: these methods have a lot of duplicate code
-    def get_system_list(self):
+    def get_system_list(self, flatten=False):
         system_list = self._get_report('splice-export')
         for s in system_list:
             s['server_id'] = self.prefix + s['server_id']
-            s['organization'] = utils.create_org_name(name=s['organization'], prefix=self.prefix)
-            s['org_id'] = self.prefix + s['org_id']
+            if flatten:
+                s['organization'] = FLAT_ORG_NAME
+                s['org_id'] = self.prefix + '1'
+            else:
+                s['organization'] = utils.create_org_name(name=s['organization'], prefix=self.prefix)
+                s['org_id'] = self.prefix + s['org_id']
 
         return system_list
 
@@ -93,14 +99,17 @@ class SpacewalkClient(object):
     def get_channel_list(self):
         return self._get_report('cloned-channels')
 
-    def get_org_list(self):
+    def get_org_list(self, flatten=False):
         # we grab the full user list and then extract the orgs. This is not as
         # efficient as just getting the orgs from the db, but we may want to
         # create person consumers in the future.
         full_user_list = self._get_report('users')
         orgs = {}
-        for u in full_user_list:
-            orgs[self.prefix + u['organization_id']] = utils.create_org_name(name=u['organization'], prefix=self.prefix)
+        if flatten:
+            orgs[self.prefix + '1'] = utils.create_org_name(name=FLAT_ORG_NAME, prefix=self.prefix)
+        else:
+            for u in full_user_list:
+                orgs[self.prefix + u['organization_id']] = utils.create_org_name(name=u['organization'], prefix=self.prefix)
 
         return orgs
 

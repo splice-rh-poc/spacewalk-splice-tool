@@ -63,6 +63,14 @@ def get_autoentitle(cfg):
         return True
 
 
+def get_flatten_orgs(cfg):
+    try:
+        return cfg.getboolean('katello', 'flatten_orgs')
+    except:
+        # default to False if option does not exist
+        return False
+
+
 def create_org_name(name, prefix=""):
     """
     given a name, optionally add the prefix in a human-readable form.
