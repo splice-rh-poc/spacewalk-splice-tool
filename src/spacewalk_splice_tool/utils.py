@@ -55,6 +55,14 @@ def get_multi_sw_cfg(cfg):
     return spacewalk_sections
 
 
+def get_autoentitle(cfg):
+    try:
+        return cfg.getboolean('katello', 'autoentitle_systems')
+    except:
+        # default to True if option does not exist
+        return True
+
+
 def create_org_name(name, prefix=""):
     """
     given a name, optionally add the prefix in a human-readable form.
