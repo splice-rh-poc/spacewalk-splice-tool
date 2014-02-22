@@ -173,9 +173,7 @@ def spacewalk_sync(options):
 
     sw_clients = []
     _LOG.info("Started capturing system data from %s spacewalk(s)" % (len(utils.get_multi_sw_cfg(CONFIG))))
-    print("Started capturing system data from %s spacewalk(s)" % (len(utils.get_multi_sw_cfg(CONFIG))))
     for sw_section in utils.get_multi_sw_cfg(CONFIG):
-        print "loop %s" % sw_section
         # the :10 slice is to strip the word "spacewalk_" from the section name to create the prefix
         sw_prefix = sw_section[10:]
         if CONFIG.has_option(sw_section, "type") and CONFIG.get(sw_section, "type") == 'file':
@@ -191,7 +189,7 @@ def spacewalk_sync(options):
 
     for client in sw_clients:
         consumers = []
-        spacewalk_details = _pull_spacewalk_data(client)
+        spacewalk_details = _pull_spacewalk_data(client, utils.get_flatten_orgs(CONFIG))
         kps.update_owners(spacewalk_details['org_list'], client.prefix)
 
         if CONFIG.has_option('main', 'sync_users') and CONFIG.getboolean('main', 'sync_users'):
