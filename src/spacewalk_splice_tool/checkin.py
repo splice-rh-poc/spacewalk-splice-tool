@@ -132,19 +132,21 @@ def check_for_invalid_org_names(org_list):
 
 
 #TODO: this should probably live in sw_client
-def _pull_spacewalk_data(client):
+def _pull_spacewalk_data(client, flatten=False):
     """
     return a dict with the info we need from a spacewalk instance (not prefixed yet)
     """
 
     _LOG.info("retrieving data from spacewalk %s" % client.prefix)
+    if flatten:
+        _LOG.info("org structure for spacewalk will be flattened into a single org")
 
     return_dict = {}
     return_dict['sw_user_list'] = client.get_user_list()
-    return_dict['system_details'] = client.get_system_list()
+    return_dict['system_details'] = client.get_system_list(flatten)
     return_dict['channel_details'] = client.get_channel_list()
     return_dict['hosts_guests'] = client.get_host_guest_list()
-    return_dict['org_list'] = client.get_org_list()
+    return_dict['org_list'] = client.get_org_list(flatten)
 
     if not check_for_invalid_org_names(return_dict['org_list']):
         raise Exception("Invalid org names found. Check /var/log/splice/spacewalk_splice_tool.log for more detail.")

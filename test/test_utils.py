@@ -77,6 +77,14 @@ class UtilsTest(SpliceToolTest):
         cfg.set('katello', 'autoentitle_systems', 'False')
         self.assertEquals(False, utils.get_autoentitle(cfg))
 
+    def test_flatten_orgs(self):
+        cfg = utils.cfg_init()
+        self.assertEquals(False, utils.get_flatten_orgs(cfg))
+        self.unmock(utils, 'cfg_init')
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        cfg.set('katello', 'flatten_orgs', 'True')
+        self.assertEquals(True, utils.get_autoentitle(cfg))
+
     def test_multisw_config(self):
         # test first with mocked config (single spacewalk)
         cfg = utils.cfg_init()
