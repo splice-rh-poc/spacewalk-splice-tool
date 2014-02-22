@@ -1,6 +1,6 @@
 # spacewalk-splice-tool package
 Name:           spacewalk-splice-tool
-Version:        0.47
+Version:        0.48
 Release:        1%{?dist}
 Summary:        A tool for gathering active system checkin data from spacewalk server and report to Splice server
 
@@ -74,6 +74,15 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Fri Feb 21 2014 Chris Duryee (beav) <cduryee@redhat.com>
+- forgot some wiring, and remove print statements (cduryee@redhat.com)
+- allow users to flatten org structure if desired (cduryee@redhat.com)
+- Allow disabling of autoentitle via conf file (cduryee@redhat.com)
+- remove extraneous log statement (cduryee@redhat.com)
+- 1064523: parse ';' properly in channel list when calculating clones
+  (cduryee@redhat.com)
+- add failing test for 1064523 (cduryee@redhat.com)
+
 * Thu Jan 09 2014 Chris Duryee (beav) <cduryee@redhat.com>
 - use sync_users config setting (cduryee@redhat.com)
 - refactor to put "report_input" a conf option instead of cli option
