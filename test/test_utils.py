@@ -60,20 +60,20 @@ class UtilsTest(SpliceToolTest):
     def test_config(self):
         # unmock cfg_init, which is mocked in base.py
         self.unmock(utils, 'cfg_init')
-        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.test.conf")
         self.assertEquals(443, cfg.getint("splice", "port"))
 
     def test_config_reinit(self):
         # unmock cfg_init, which is mocked in base.py
         self.unmock(utils, 'cfg_init')
-        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.test.conf")
         self.assertEquals(443, cfg.getint("splice", "port"))
 
     def test_autoentitle_config(self):
         cfg = utils.cfg_init()
         self.assertEquals(True, utils.get_autoentitle(cfg))
         self.unmock(utils, 'cfg_init')
-        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.test.conf")
         cfg.set('katello', 'autoentitle_systems', 'False')
         self.assertEquals(False, utils.get_autoentitle(cfg))
 
@@ -81,7 +81,7 @@ class UtilsTest(SpliceToolTest):
         cfg = utils.cfg_init()
         self.assertEquals(False, utils.get_flatten_orgs(cfg))
         self.unmock(utils, 'cfg_init')
-        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.test.conf")
         cfg.set('katello', 'flatten_orgs', 'True')
         self.assertEquals(True, utils.get_autoentitle(cfg))
 
@@ -92,7 +92,7 @@ class UtilsTest(SpliceToolTest):
 
         # unmock cfg_init, which is mocked in base.py
         self.unmock(utils, 'cfg_init')
-        cfg = utils.cfg_init(config_file="../etc/splice/checkin.conf")
+        cfg = utils.cfg_init(config_file="../etc/splice/checkin.test.conf")
         self.assertTrue('spacewalk_foo' in utils.get_multi_sw_cfg(cfg))
         self.assertTrue('spacewalk_bar' in utils.get_multi_sw_cfg(cfg))
         self.assertTrue('spacewalk_baz' in utils.get_multi_sw_cfg(cfg))

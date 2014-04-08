@@ -74,17 +74,17 @@ def cpu_facts(cpuinfo):
     cpu_facts_dict['lscpu.core(s)_per_socket'] = \
         int(cpu_count) / int(cpu_socket_count)
     cpu_facts_dict['lscpu.hypervisor_vendor'] = ""
-    #cpu_facts_dict['lscpu.numa_node0_cpu(s)'] = ""
+    # cpu_facts_dict['lscpu.numa_node0_cpu(s)'] = ""
     cpu_facts_dict['lscpu.bogomips'] = ""
-    #cpu_facts_dict['cpu.core(s)_per_socket'] = ""
+    # cpu_facts_dict['cpu.core(s)_per_socket'] = ""
     cpu_facts_dict['cpu.cpu_socket(s)'] = cpu_socket_count
     cpu_facts_dict['lscpu.virtualization_type'] = ""
     cpu_facts_dict['lscpu.cpu_family'] = ""
-    #cpu_facts_dict['lscpu.numa_node(s)'] = ""
+    # cpu_facts_dict['lscpu.numa_node(s)'] = ""
     cpu_facts_dict['lscpu.l1i_cache'] = ""
     cpu_facts_dict['lscpu.l2_cache'] = ""
     cpu_facts_dict['lscpu.l3_cache'] = ""
-    #cpu_facts_dict['lscpu.thread(s)_per_core'] = ""
+    # cpu_facts_dict['lscpu.thread(s)_per_core'] = ""
     cpu_facts_dict['lscpu.cpu_op-mode(s)'] = ""
     return cpu_facts_dict
 
