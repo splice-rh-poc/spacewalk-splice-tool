@@ -131,7 +131,7 @@ def check_for_invalid_org_names(org_list):
     return is_valid
 
 
-#TODO: this should probably live in sw_client
+# TODO: this should probably live in sw_client
 def _pull_spacewalk_data(client, flatten=False):
     """
     return a dict with the info we need from a spacewalk instance (not prefixed yet)

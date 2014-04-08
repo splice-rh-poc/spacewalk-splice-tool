@@ -60,7 +60,7 @@ class KatelloPushSync:
         owner_labels = owner_label_map.keys()
         _LOG.debug("owner label list from katello: %s" % owner_labels)
 
-        #TODO: string needs a dash for readability
+        # TODO: string needs a dash for readability
         root_org = "satellite-%s1" % prefix
 
         for org_id in org_ids:
@@ -202,7 +202,7 @@ class KatelloPushSync:
         consumers_to_delete = []
 
         for consumer in consumer_list:
-            if not 'systemid' in consumer['facts'] or consumer['facts']['systemid'] is None:
+            if 'systemid' not in consumer['facts'] or consumer['facts']['systemid'] is None:
                     _LOG.debug("consumer %s has no systemid, skipping" % consumer['name'])
                     continue
             # don't delete consumers that are not in orgs we manage!

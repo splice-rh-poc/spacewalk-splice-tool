@@ -124,13 +124,13 @@ class KatelloConnection():
         self.infoapi.add_custom_info(informable_type='system', informable_id=consumer['id'],
                                      keyname='spacewalk-id', value=sw_uuid)
 
-        #TODO: get rid of this extra call!
+        # TODO: get rid of this extra call!
         facts = consumer['facts']
         if 'virt.is_guest' in facts:
             facts['virt.uuid'] = consumer['uuid']
             self.update_consumer(name=consumer['name'], cp_uuid=consumer['uuid'], facts=facts)
 
-        #there appears to be a candlepin bug where this isn't being set on initial consumer setup
+        # there appears to be a candlepin bug where this isn't being set on initial consumer setup
         self.systemapi.checkin(consumer['uuid'], self._convert_date(last_checkin))
 
         return consumer['uuid']

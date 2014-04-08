@@ -62,7 +62,7 @@ class SpacewalkClient(object):
         # we need to re-encode so DictReader knows it's getting utf-8 data
         reader = csv.DictReader(ssh_stdout.decode('utf-8').encode('utf-8').splitlines())
 
-        #XXX: suboptimal
+        # XXX: suboptimal
         retval = []
         for r in reader:
             retval.append(r)
