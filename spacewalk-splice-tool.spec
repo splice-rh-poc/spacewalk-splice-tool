@@ -46,7 +46,7 @@ mkdir -p %{buildroot}/%{_var}/log/%{name}
 mkdir -p %{buildroot}/%{_sysconfdir}/cron.d
 
 # Configuration
-cp -R etc/splice/* %{buildroot}/%{_sysconfdir}/splice/
+cp -R etc/splice/checkin.conf %{buildroot}/%{_sysconfdir}/splice/
 cp -R etc/cron.d/* %{buildroot}/%{_sysconfdir}/cron.d/
 
 # Tools
